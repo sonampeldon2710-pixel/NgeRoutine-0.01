@@ -61,13 +61,12 @@ app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.get('/debug', async (req, res) => {
   const db = require('./db');
-//   const [users] = await db.execute('SELECT id, username FROM users');
-//   const [users] = await db.execute('SELECT * FROM users');
-//   const [habits] = await db.execute('SELECT * FROM habits');
-//   const [logs] = await db.execute('SELECT * FROM habit_logs');
-//   res.json({ users, habits, logs });
-  const [tables] = await db.execute('SHOW TABLES');
-  res.json(tables);
+  const [users] = await db.execute('SELECT * FROM users');
+  const [habits] = await db.execute('SELECT * FROM habits');
+  const [habit_logs] = await db.execute('SELECT * FROM habit_logs');
+  const [habit_trends] = await db.execute('SELECT * FROM habit_trends');
+  const [profiles] = await db.execute('SELECT * FROM profiles');
+  res.json({ users, habits, habit_logs, habit_trends, profiles });
 });
 
 const PORT = process.env.PORT || 3000;
