@@ -66,6 +66,8 @@ app.get('/debug', async (req, res) => {
   const [habits] = await db.execute('SELECT * FROM habits');
   const [logs] = await db.execute('SELECT * FROM habit_logs');
   res.json({ users, habits, logs });
+  const [tables] = await db.execute('SHOW TABLES');
+  res.json(tables);
 });
 
 const PORT = process.env.PORT || 3000;
