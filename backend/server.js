@@ -4,6 +4,15 @@ const cors    = require('cors');
 const app     = express();
 const db      = require('./db');
 
+const path = require('path');
+
+// Serve frontend files
+app.use(express.static(path.join(__dirname, '..')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
 async function initDB() {
   await db.execute(`CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
