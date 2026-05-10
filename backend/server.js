@@ -59,5 +59,11 @@ app.use('/api/habits', require('./routes/habits'));
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
+app.get('/debug', async (req, res) => {
+  const db = require('./db');
+  const [users] = await db.execute('SELECT id, username FROM users');
+  res.json(users);
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
