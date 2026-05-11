@@ -6,13 +6,24 @@ const db      = require('./db');
 
 const path = require('path');
 
-// Serve frontend files
-app.use(express.static(path.join(__dirname, '..')));
+// Serve frontend files - ONLY if they exist in the same folder
+// This prevents the server from crashing if index.html isn't bundled
+const frontendPath = path.join(__dirname, '..'); 
+app.use(express.static(frontendPath));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
+  const indexPath = path.join(frontendPath, 'index.html');
+  // Check if file exists before trying to send it
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.json({ 
+      message: "Backend is running!", 
+      api_status: "ok",
+      note: "Frontend files not found in container. Use your separate frontend URL." 
+    });
+  }
 });
-
 async function initDB() {
   await db.execute(`CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
