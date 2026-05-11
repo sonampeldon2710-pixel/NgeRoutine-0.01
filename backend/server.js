@@ -28,9 +28,11 @@ async function initDB() {
   await db.execute(`CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    full_name VARCHAR(100),
     password_hash VARCHAR(255) NOT NULL,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
+)`);
   await db.execute(`CREATE TABLE IF NOT EXISTS profiles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNIQUE NOT NULL,
