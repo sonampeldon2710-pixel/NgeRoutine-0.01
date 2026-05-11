@@ -1,6 +1,7 @@
+
 FROM node:18-alpine
 WORKDIR /app
-COPY index.html /index.html
+# Remove the index.html copy for now to fix the build
 COPY package*.json ./
 RUN npm install
 COPY . .
