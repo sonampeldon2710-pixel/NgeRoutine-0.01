@@ -34,6 +34,10 @@ router.post('/signup', async (req, res) => {
       'INSERT INTO users (username, full_name, password_hash) VALUES (?,?,?)',
       [username, name, hash]
     );
+    await db.execute(
+      'INSERT INTO profiles (user_id, full_name) VALUES (?, ?)',
+      [result.insertId, name]
+    );
     const token = jwt.sign({ userId: result.insertId }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: result.insertId, name, username } });
   } catch (e) { res.status(500).json({ error: e.message }); }
