@@ -10,7 +10,7 @@ async function getProfileId(userId) {
 }
 
 router.get('/', auth, async (req, res) => {
-  const profileId = await getProfileId(req.user.userId);
+  const profileId = await getProfileId(req.userId);
   const [rows] = await db.execute(
     'SELECT * FROM habits WHERE profile_id = ? ORDER BY created_at DESC', [profileId]
   );
@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.post('/', auth, async (req, res) => {
-  const profileId = await getProfileId(req.user.userId);
+  const profileId = await getProfileId(req.userId);
   const { name, category } = req.body;
   const [result] = await db.execute(
     'INSERT INTO habits (profile_id, name, category) VALUES (?, ?, ?)',
@@ -29,7 +29,7 @@ router.post('/', auth, async (req, res) => {
 
 // ✅ specific routes FIRST
 router.post('/logs', auth, async (req, res) => {
-  const profileId = await getProfileId(req.user.userId);
+  const profileId = await getProfileId(req.userId);
   const { habitId, habitName, habitIcon, date, duration, unit, startTime, endTime, note } = req.body;
   const [result] = await db.execute(
     'INSERT INTO habit_logs (habit_id, value, note, logged_at) VALUES (?, ?, ?, ?)',
@@ -39,7 +39,7 @@ router.post('/logs', auth, async (req, res) => {
 });
 
 router.get('/logs', auth, async (req, res) => {
-  const profileId = await getProfileId(req.user.userId);
+  const profileId = await getProfileId(req.userId);
   const [rows] = await db.execute(
     `SELECT hl.* FROM habit_logs hl
      JOIN habits h ON h.id = hl.habit_id
