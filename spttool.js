@@ -3423,7 +3423,8 @@ function swClearCatIfTyping() {
 
 /* ── Save to History ── */
 async function swLogTime() {
-  const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
+  const customText = (document.getElementById('sw-custom-activity')?.value || '').trim();
+  // const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
   const cat = customText || _swCat;
   
   if (!cat) {
