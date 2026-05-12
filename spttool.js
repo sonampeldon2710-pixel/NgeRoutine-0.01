@@ -3388,7 +3388,7 @@ async function swLogTime() {
   // ── POST to backend ──
   try {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${API_BASE}/api/logs`, {
+    const res = await fetch(`${API_BASE}/logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
