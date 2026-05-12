@@ -2840,6 +2840,28 @@ async function saveSchedule() {
 
   msgEl.className = 'auth-msg ok';
   saveUserData();
+
+  const token = localStorage.getItem('qt_token');
+  if (token) {
+    const method = _scEditId ? 'PUT' : 'POST';
+    const url = _scEditId 
+      ? `${API_BASE}/schedules/${_scEditId}`
+      : `${API_BASE}/schedules`;
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        id: _scEditId || Date.now(),
+        category, date,
+        from_time: from,
+        to_time: to,
+        duration_mins: durationMins,
+        tasks
+      })
+    }).catch(e => console.warn('Schedule sync failed', e));
+  }
+
+
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
@@ -2854,6 +2876,16 @@ function deleteSchedule(id) {
   // Also remove the matching log entry
   ud.logs = ud.logs.filter(l => l.scheduleId !== id);
   saveUserData();
+  const token = localStorage.getItem('qt_token');
+  if (token) {
+    fetch(`${API_BASE}/schedules/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).catch(e => console.warn('Schedule delete sync failed', e));
+  }
+
+
+
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
