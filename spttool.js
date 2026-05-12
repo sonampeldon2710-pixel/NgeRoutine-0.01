@@ -96,7 +96,7 @@ async function doSignup() {
   if (!name || !user || !pass) return showMsg('su-msg', 'Please fill in all fields.', 'err');
 
   try {
-    const r = await fetch(`${API}/auth/signup`, {
+    const r = await fetch(`${API_BASE}/auth/signup`, {
       method: 'POST',
       // headers: { 'Content-Type': 'application/json' },
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -118,7 +118,7 @@ async function doLogin() {
   if (!user || !pass) return showMsg('li-msg', 'Please enter your username and password.', 'err');
 
   try {
-    const r = await fetch(`${API}/auth/login`, {
+    const r = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       // headers: { 'Content-Type': 'application/json' },
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -1145,7 +1145,7 @@ async function logHabit(id) {
   // Also save to backend
   const token = localStorage.getItem('qt_token');
   if (token) {
-    fetch(`${API}/habits/logs`, {
+    fetch(`${API_BASE}/habits/logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
