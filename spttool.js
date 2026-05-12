@@ -3387,11 +3387,11 @@ async function swLogTime() {
 
   // ── POST to backend ──
   try {
-    const token = localStorage.getItem('qt_token');
     const res = await fetch(`${API_BASE}/logs`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('qt_token')
       },
       body: JSON.stringify({
         habit_id:   habitId,
