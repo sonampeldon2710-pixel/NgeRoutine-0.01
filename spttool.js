@@ -19,7 +19,7 @@
 //   body: JSON.stringify(data)
 // });
 
-const API_BASE = 'https://sompel-tech-production.up.railway.app';
+const API_BASE = 'https://sompel-tech-production.up.railway.app/api';
 
 let currentUser = null;
 let currentAlarmHabit = null;
