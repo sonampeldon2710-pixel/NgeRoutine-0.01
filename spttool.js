@@ -1661,14 +1661,51 @@ const TREND_PALETTE=[
 /* Track which activity is currently focused (null = show all) */
 let _trendFocusKey = null;
 
-function renderTrends(){
+async function renderTrends(){
   const content=document.getElementById('trends-content');
   if(!content)return;
+
+  // ── Fetch logs from backend ──
+  try {
+    const token = localStorage.getItem('qt_token');
+    if (token) {
+      const res = await fetch(`${API_BASE}/logs`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const dbLogs = await res.json();
+      if (Array.isArray(dbLogs) && dbLogs.length) {
+        // Merge DB logs into local format
+        const ud = getUserData();
+        if (ud) {
+          dbLogs.forEach(l => {
+            const exists = ud.logs.find(local => local.id === l.id);
+            if (!exists) ud.logs.push({
+              id: l.id,
+              habitId: l.habit_id,
+              habitName: l.habit_name,
+              habitIcon: l.habit_icon || '📋',
+              date: l.date,
+              duration: l.duration,
+              unit: l.unit || 'hrs',
+              note: l.note
+            });
+          });
+          saveUserData();
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('Could not fetch logs from backend:', e);
+  }
+
   const ud=getUserData();
   if(!ud||!ud.logs.length){
     content.innerHTML=`<div class="no-data-msg"><div class="no-data-icon">📊</div><div>No habit logs yet.</div><div style="margin-top:6px;font-size:12px">Log your habits in the Tracker tab to see trends here.</div></div>`;
     return;
   }
+
+
+
   Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}});
   chartInstances={};
   content.innerHTML='';

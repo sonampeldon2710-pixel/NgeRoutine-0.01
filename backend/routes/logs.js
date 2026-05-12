@@ -84,4 +84,21 @@ router.post('/checkins', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// GET /api/logs/trends — total hours per habit per date
+router.get('/trends', auth, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT habit_name, habit_icon, date, SUM(duration) as total_hours
+       FROM logs 
+       WHERE user_id = ?
+       GROUP BY habit_name, habit_icon, date
+       ORDER BY date ASC`,
+      [req.userId]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
 module.exports = router;
