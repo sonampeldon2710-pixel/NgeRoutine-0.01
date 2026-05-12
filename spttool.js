@@ -3387,12 +3387,10 @@ async function swLogTime() {
 
   // ── POST to backend ──
   try {
-    const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE}/logs`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         habit_id:   habitId,
