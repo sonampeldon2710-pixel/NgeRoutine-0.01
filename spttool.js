@@ -969,6 +969,7 @@ function updateDiff(hId){
 
 function buildHabitCards(){
   const wrap=document.getElementById('habit-cards-wrap');
+  if(!wrap) return;
   wrap.innerHTML='';
   const ud=getUserData();
   if(!ud) return;
