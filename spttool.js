@@ -1144,7 +1144,7 @@ async function logHabit(id) {
   saveUserData();
 
   // Also save to backend
-  const token = localStorage.getItem('qt_token');
+  
   if (token) {
     fetch(`${API_BASE}/habits/logs`, {
       method: 'POST',
@@ -1282,7 +1282,7 @@ function renderCalendar(){
   const logDates=new Set(ud?ud.logs.map(l=>l.date):[]);
   const futureDates=new Set([...logDates].filter(d=>d>todayStr));
 
-  for(let i=0;i<first;i++){
+  for(let i=0;i<first;i++){const token = localStorage.getItem('qt_token');
     const prev=new Date(calYear,calMonth,-(first-i-1));
     const el=document.createElement('div');
     el.className='cal-day other-month';
@@ -3356,6 +3356,7 @@ function swClearCatIfTyping() {
 async function swLogTime() {
   const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
   const cat = customText || _swCat;
+  const token = localStorage.getItem('qt_token');
   if (!cat) {
     const msg = document.getElementById('sw-log-msg');
     msg.textContent = 'Please select an activity or type one.';
