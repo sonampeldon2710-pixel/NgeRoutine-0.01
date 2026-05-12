@@ -2752,7 +2752,7 @@ function closeScheduleModal() {
 }
 
 /* ── Save / Update ── */
-function saveSchedule() {
+async function saveSchedule() {
   const customText = document.getElementById('sc-custom-activity').value.trim();
   const category = customText || _scSelectedCat;
   const date = document.getElementById('sc-date').value;
@@ -3409,7 +3409,7 @@ async function swLogTime() {
   } catch (e) {
     console.error('Failed to save log to backend:', e);
   }
-  
+
   if (typeof renderHistory          === 'function') renderHistory();
   if (typeof renderCalendar         === 'function') renderCalendar();
   if (typeof renderCalendar2        === 'function') renderCalendar2();
