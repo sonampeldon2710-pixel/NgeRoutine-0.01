@@ -3353,7 +3353,7 @@ function swClearCatIfTyping() {
 }
 
 /* ── Save to History ── */
-function swLogTime() {
+async function swLogTime() {
   const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
   const cat = customText || _swCat;
   if (!cat) {
@@ -3375,26 +3375,46 @@ function swLogTime() {
   const icon    = customText ? '✍' : (catIcons[cat] || '⏱');
   const habitId = (typeof LF_CAT_HABIT_MAP !== 'undefined' && LF_CAT_HABIT_MAP[cat])
                   || cat.toLowerCase().replace(/\s+/g, '-');
+  const today   = new Date().toISOString().split('T')[0];
 
+  // ── Save to local storage (keep as before) ──
   ud.logs.push({
-    id:         Date.now(),
-    habitId,
-    habitName:  cat,
-    habitIcon:  icon,
-    date:       new Date().toISOString().split('T')[0],
-    duration:   hrs,
-    unit:       'hrs',
-    startTime:  '',
-    endTime:    '',
-    note:       `Stopwatch · ${_swFmt(ms)}`
+    id: Date.now(), habitId, habitName: cat, habitIcon: icon,
+    date: today, duration: hrs, unit: 'hrs',
+    startTime: '', endTime: '', note: `Stopwatch · ${_swFmt(ms)}`
   });
-
   saveUserData();
-  if (typeof renderHistory         === 'function') renderHistory();
-  if (typeof renderCalendar        === 'function') renderCalendar();
-  if (typeof renderCalendar2       === 'function') renderCalendar2();
-  if (typeof renderTrends          === 'function') renderTrends();
-  if (typeof renderTodayTracker    === 'function') renderTodayTracker();
+
+  // ── POST to backend ──
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE}/api/logs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        habit_id:   habitId,
+        habit_name: cat,
+        habit_icon: icon,
+        date:       today,
+        duration:   hrs,
+        unit:       'hrs',
+        note:       `Stopwatch · ${_swFmt(ms)}`
+      })
+    });
+    const data = await res.json();
+    console.log('Log saved to DB:', data);
+  } catch (e) {
+    console.error('Failed to save log to backend:', e);
+  }
+
+  if (typeof renderHistory          === 'function') renderHistory();
+  if (typeof renderCalendar         === 'function') renderCalendar();
+  if (typeof renderCalendar2        === 'function') renderCalendar2();
+  if (typeof renderTrends           === 'function') renderTrends();
+  if (typeof renderTodayTracker     === 'function') renderTodayTracker();
   if (typeof renderTrackerSchedules === 'function') renderTrackerSchedules();
 
   const msg = document.getElementById('sw-log-msg');

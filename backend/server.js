@@ -122,7 +122,6 @@ app.use('/api/habits',    require('./routes/habits'));
 app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/alarms',    require('./routes/alarms'));
-app.use('/api/trends',    require('./routes/trends'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.get('/debug', async (req, res) => {
