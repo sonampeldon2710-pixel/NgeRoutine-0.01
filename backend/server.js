@@ -66,6 +66,40 @@ async function initDB() {
   console.log('Database tables ready!');
 }
 
+await db.execute(`CREATE TABLE IF NOT EXISTS logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  habit_id VARCHAR(100),
+  habit_name VARCHAR(100),
+  habit_icon VARCHAR(10),
+  date DATE NOT NULL,
+  duration FLOAT DEFAULT 0,
+  unit VARCHAR(10) DEFAULT 'hrs',
+  start_time VARCHAR(20),
+  end_time VARCHAR(20),
+  note TEXT,
+  is_schedule TINYINT DEFAULT 0,
+  is_quick_alarm TINYINT DEFAULT 0,
+  schedule_id BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
+
+await db.execute(`CREATE TABLE IF NOT EXISTS schedules (
+  id BIGINT PRIMARY KEY,
+  user_id INT NOT NULL,
+  category VARCHAR(100),
+  date DATE,
+  from_time VARCHAR(10),
+  to_time VARCHAR(10),
+  duration_mins INT DEFAULT 0,
+  tasks JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
+
+
 initDB().catch(console.error);
 
 app.use(cors({
@@ -78,7 +112,9 @@ app.use(express.json());
 
 app.use('/api/auth',   require('./routes/auth'));
 app.use('/api/habits', require('./routes/habits'));
-
+app.use('/api/logs',      require('./routes/logs'));
+app.use('/api/schedules', require('./routes/schedules'));
+app.use('/api/alarms',    require('./routes/alarms'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.get('/debug', async (req, res) => {
