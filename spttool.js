@@ -106,7 +106,7 @@ async function doSignup() {
     if (!r.ok) return showMsg('su-msg', data.error || 'Signup failed.', 'err');
     localStorage.setItem('qt_token', data.token);
     showMsg('su-msg', 'Account created! Signing you in…', 'ok');
-    setTimeout(() => launchApp({ username: data.username, name: data.full_name || data.name || 'User' }), 900);
+    setTimeout(() => launchApp({ username: data.user.username, name: data.user.name }), 900)
   } catch {
     showMsg('su-msg', 'Network error. Please try again.', 'err');
   }
@@ -127,7 +127,7 @@ async function doLogin() {
     const data = await r.json();
     if (!r.ok) return showMsg('li-msg', data.error || 'Login failed.', 'err');
     localStorage.setItem('qt_token', data.token);
-    launchApp({ username: data.username, name: data.full_name || data.name || 'User' });
+    launchApp({ username: data.user.username, name: data.user.name });
   } catch {
     showMsg('li-msg', 'Network error. Please try again.', 'err');
   }
