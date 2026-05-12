@@ -3356,6 +3356,7 @@ function swClearCatIfTyping() {
 async function swLogTime() {
   const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
   const cat = customText || _swCat;
+  
   if (!cat) {
     const msg = document.getElementById('sw-log-msg');
     msg.textContent = 'Please select an activity or type one.';
@@ -3408,7 +3409,7 @@ async function swLogTime() {
   } catch (e) {
     console.error('Failed to save log to backend:', e);
   }
-
+  
   if (typeof renderHistory          === 'function') renderHistory();
   if (typeof renderCalendar         === 'function') renderCalendar();
   if (typeof renderCalendar2        === 'function') renderCalendar2();
