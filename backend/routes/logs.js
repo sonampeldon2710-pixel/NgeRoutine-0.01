@@ -45,6 +45,8 @@ router.post('/', auth, async (req, res) => {
         schedule_id || null
       ]
     );
+    
+
     res.json({ id: result.insertId, message: 'Log saved.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -99,6 +101,8 @@ router.get('/trends', auth, async (req, res) => {
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+
 
 
 module.exports = router;
