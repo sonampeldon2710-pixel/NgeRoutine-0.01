@@ -8,7 +8,7 @@
 
 // const API = 'https://ngeroutinetool-wvl7srve.b4a.run/api';
 
-const API = 'https://ngeroutinetool.onrender.com/api';
+// const API = 'https://ngeroutinetool.onrender.com/api';
 
 // const response = await fetch(`${API}/your-endpoint`, {
 //   method: 'POST',
@@ -18,6 +18,8 @@ const API = 'https://ngeroutinetool.onrender.com/api';
 //   },
 //   body: JSON.stringify(data)
 // });
+
+const API_BASE = 'https://sompel-tech-production.up.railway.app';
 
 let currentUser = null;
 let currentAlarmHabit = null;
