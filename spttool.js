@@ -3356,7 +3356,6 @@ function swClearCatIfTyping() {
 async function swLogTime() {
   const customText = (document.getElementById('sc-custom-activity')?.value || '').trim();
   const cat = customText || _swCat;
-  const token = localStorage.getItem('qt_token');
   if (!cat) {
     const msg = document.getElementById('sw-log-msg');
     msg.textContent = 'Please select an activity or type one.';
@@ -3388,6 +3387,7 @@ async function swLogTime() {
 
   // ── POST to backend ──
   try {
+    const token = localStorage.getItem('qt_token');
     const res = await fetch(`${API_BASE}/logs`, {
       method: 'POST',
       headers: {
