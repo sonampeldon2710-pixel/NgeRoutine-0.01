@@ -26,17 +26,18 @@ router.get('/', auth, async (req, res) => {
 
 // POST /api/schedules
 router.post('/', auth, async (req, res) => {
-  const { category, date, from_time, to_time, duration_mins, tasks } = req.body;
+  const { id, category, date, from_time, to_time, duration_mins, tasks } = req.body;
   if (!category || !date)
     return res.status(400).json({ error: 'category and date required.' });
   try {
+    const schedId = id || Date.now();
     const [result] = await db.execute(
-      `INSERT INTO schedules (user_id,category,date,from_time,to_time,duration_mins,tasks)
-       VALUES (?,?,?,?,?,?,?)`,
-      [req.userId, category, date, from_time, to_time,
+      `INSERT INTO schedules (id, user_id, category, date, from_time, to_time, duration_mins, tasks)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [schedId, req.userId, category, date, from_time, to_time,
        duration_mins || 0, JSON.stringify(tasks || [])]
     );
-    res.json({ id: result.insertId, message: 'Schedule created.' });
+    res.json({ id: schedId, message: 'Schedule created.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
