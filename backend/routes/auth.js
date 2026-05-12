@@ -191,7 +191,7 @@ function auth(req, res, next) {
 
 // SIGNUP: Creates User AND Profile
 router.post('/signup', async (req, res) => {
-  const { name, username, password } = req.body;
+  const { full_name: name, username, password } = req.body;
   if (!name || !username || !password) return res.status(400).json({ error: 'All fields required.' });
 
   try {
@@ -238,7 +238,7 @@ router.post('/login', async (req, res) => {
 
 // UPDATE PROFILE (The one that was 403-ing)
 router.put('/update', auth, async (req, res) => {
-  const { name, username, currentPassword, newPassword } = req.body;
+  const { full_name: name, username, currentPassword, newPassword } = req.body;
   try {
     const [rows] = await db.execute('SELECT * FROM users WHERE id = ?', [req.userId]);
     const match = await bcrypt.compare(currentPassword, rows[0].password_hash);
