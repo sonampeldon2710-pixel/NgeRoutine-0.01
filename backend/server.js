@@ -95,6 +95,15 @@ async function initDB() {
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
   )`);
+  await db.execute(`CREATE TABLE IF NOT EXISTS checkin_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  score INT DEFAULT 0,
+  answers JSON,
+  l_answers JSON,
+  date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
   console.log('Database tables ready!');
 }
 
@@ -113,6 +122,7 @@ app.use('/api/habits',    require('./routes/habits'));
 app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/alarms',    require('./routes/alarms'));
+app.use('/api/trends',    require('./routes/trends'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.get('/debug', async (req, res) => {
