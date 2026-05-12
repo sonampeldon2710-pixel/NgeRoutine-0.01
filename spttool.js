@@ -2854,6 +2854,15 @@ function deleteSchedule(id) {
   // Also remove the matching log entry
   ud.logs = ud.logs.filter(l => l.scheduleId !== id);
   saveUserData();
+  try {
+    await fetch(`${API_BASE}/schedules/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('qt_token') }
+    });
+    console.log('Schedule deleted from DB');
+  } catch (e) {
+    console.error('Schedule delete sync failed:', e);
+  }
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
@@ -3384,6 +3393,38 @@ async function swLogTime() {
     startTime: '', endTime: '', note: `Stopwatch · ${_swFmt(ms)}`
   });
   saveUserData();
+
+
+  // ── POST/PUT to backend ──
+  try {
+    const method = _scEditId ? 'PUT' : 'POST';
+    const url = _scEditId 
+      ? `${API_BASE}/schedules/${_scEditId}` 
+      : `${API_BASE}/schedules`;
+    
+    await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('qt_token')
+      },
+      body: JSON.stringify({
+        category,
+        date,
+        from_time: from,
+        to_time: to,
+        duration_mins: durationMins,
+        tasks
+      })
+    });
+    console.log('Schedule saved to DB');
+  } catch (e) {
+    console.error('Schedule sync failed:', e);
+  }
+
+  renderTrackerSchedules();  // ← this line should already be here
+
+  
 
   // ── POST to backend ──
   try {
