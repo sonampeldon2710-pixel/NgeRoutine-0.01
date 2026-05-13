@@ -1,9 +1,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#1D9E75;--green-lt:#E1F5EE;--green-dk:#0F6E56;
+  --green:#a14aa1;--green-lt:#E1F5EE;--green-dk:#acc9c1;
   --amber:#BA7517;--amber-lt:#FAEEDA;
-  --red:#C0392B;--red-lt:#FDEEEC;
-  --purple:#534AB7;--purple-lt:#EEF0FC;
+  --red:#ad3123;--red-lt:#FDEEEC;
+  --purple:#5d53c5;--purple-lt:#EEF0FC;
   --bg:#F7F5F1;--surf:#ffffff;--surf2:#F0EDE7;--surf3:#E8E4DC;
   --text:#1a1816;--muted:#6b6660;--hint:#a09c96;
   --border:rgba(0,0,0,0.08);--borderf:rgba(0,0,0,0.18);
@@ -21,7 +21,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 #auth-screen::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(29,158,117,0.06) 0%,transparent 70%);bottom:-100px;left:-100px;pointer-events:none}
 .auth-card{background:#fff;border-radius:20px;border:1px solid rgba(29,158,117,0.15);box-shadow:var(--shadow-lg);width:100%;max-width:400px;overflow:hidden;position:relative;z-index:1;animation:cardUp .5s cubic-bezier(.22,1,.36,1) both}
 @keyframes cardUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-.auth-top{background:linear-gradient(135deg,#0F6E56 0%,#1D9E75 60%,#2EBF8E 100%);padding:32px 28px 28px;text-align:center}
+.auth-top{background:linear-gradient(135deg,#53afe4 0%,#cdcf4d 60%,#c74651 100%);padding:32px 28px 28px;text-align:center}
 .auth-logo-wrap{width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;padding:6px;backdrop-filter:blur(4px)}
 .auth-logo-img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 1px 4px rgba(0,0,0,0.18))}
 .auth-logo-fallback{width:100%;height:100%;border-radius:14px;background:rgba(255,255,255,0.25);align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;letter-spacing:.04em}
