@@ -52,9 +52,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .app-logo-img{width:100%;height:100%;object-fit:contain;display:block}
 .app-logo-spt-fallback{font-size:11px;font-weight:700;color:var(--green-dk)}
 .app-logo span{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text)}
-.user-pill{display:flex;align-items:center;gap:8px;background:var(--surf2);border:.5px solid var(--border);border-radius:20px;padding:6px 12px 6px 7px;cursor:pointer;transition:all .2s}
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--green-lt);border:.5px solid var(--border);border-radius:20px;padding:6px 12px 6px 7px;cursor:pointer;transition:all .2s}
 .user-pill:hover{border-color:var(--white)}
-/* .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0f6e5607,#2ebf8f05);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center} */
 .user-pill-name{font-size:12px;font-weight:500;color:var(--text)}
 .user-pill-caret{font-size:13px;color:var(--muted);padding-left:2px;opacity:.7}
 
@@ -128,12 +127,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s ease}
 
 .box {
-  background: #d7e1f1;
-  border: 1px solid #2f7db1;
+  background: linear-gradient(135deg, #f7f1f50c, #b9d2f3);;
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 20px 14px;
   box-shadow: 0 2px 4px rgba(139, 10, 10, 0.06);
   margin-top: 24px; 
+  margin-bottom: 20px;
 }
 /* ── SECTION HEADERS ── */
 .sec-hdr{display:flex;align-items:center;gap:12px;margin:24px 0 12px}
@@ -175,7 +175,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 #submit-btn:disabled{background:var(--surf3);color:var(--hint);cursor:not-allowed}
 
 /* ── RESULTS ── */
-.res-hero{background:var(--red-lt);border:1px solid rgba(206, 97, 24, 0.2);border-radius:var(--r);padding:24px 20px;margin-bottom:12px;text-align:center}
+.res-hero{background:var(--res-hero-bg);border:1px solid rgba(24, 114, 87, 0.2);border-radius:var(--r);padding:24px 20px;margin-bottom:12px;text-align:center}
 .res-emoji{font-size:32px;margin-bottom:10px}
 .res-hero h3{font-family:'Fraunces',serif;font-size:20px;color:var(--green-dk);margin-bottom:8px}
 .res-hero p{font-size:13px;color:var(--muted);line-height:1.65;max-width:400px;margin:0 auto}
