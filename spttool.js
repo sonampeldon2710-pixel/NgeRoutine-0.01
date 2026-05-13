@@ -2878,27 +2878,6 @@ async function saveSchedule() {
   msgEl.className = 'auth-msg ok';
   saveUserData();
 
-  const token = localStorage.getItem('qt_token');
-  if (token) {
-    const method = _scEditId ? 'PUT' : 'POST';
-    const url = _scEditId 
-      ? `${API_BASE}/schedules/${_scEditId}`
-      : `${API_BASE}/schedules`;
-    fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({
-        id: _scEditId || Date.now(),
-        category, date,
-        from_time: from,
-        to_time: to,
-        duration_mins: durationMins,
-        tasks
-      })
-    }).catch(e => console.warn('Schedule sync failed', e));
-  }
-
-
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
@@ -2913,15 +2892,6 @@ function deleteSchedule(id) {
   // Also remove the matching log entry
   ud.logs = ud.logs.filter(l => l.scheduleId !== id);
   saveUserData();
-  const token = localStorage.getItem('qt_token');
-  if (token) {
-    fetch(`${API_BASE}/schedules/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).catch(e => console.warn('Schedule delete sync failed', e));
-  }
-
-
 
   renderTrackerSchedules();
   renderHistory();
@@ -3358,7 +3328,7 @@ function swStop() {
 
   // Clear previous selection
   document.getElementById('sw-log-msg').textContent = '';
-  document.querySelectorAll('#sw-categories .sw-act-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#sw-categories .aa-cat-btn').forEach(b => b.classList.remove('sel'));
   _swCat = '';
   const customInput = document.getElementById('sw-custom-activity');
   if (customInput) customInput.value = '';
@@ -3387,7 +3357,7 @@ function swReset() {
   document.getElementById('sw-log-section').style.display = 'none';
   document.getElementById('sw-laps').innerHTML = '';
   document.getElementById('sw-log-msg').textContent = '';
-  document.querySelectorAll('#sw-categories .sw-act-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#sw-categories .aa-cat-btn').forEach(b => b.classList.remove('sel'));
   const customInput = document.getElementById('sw-custom-activity');
   if (customInput) customInput.value = '';
 }
@@ -3409,7 +3379,7 @@ function _swFmt(ms) {
 
 /* ── Activity selection ── */
 function swSelectCat(btn) {
-  document.querySelectorAll('#sw-categories .sw-act-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#sw-categories .aa-cat-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   _swCat = btn.dataset.cat;
   const customInput = document.getElementById('sw-custom-activity');
@@ -3418,7 +3388,7 @@ function swSelectCat(btn) {
 
 function swClearCatIfTyping() {
   _swCat = '';
-  document.querySelectorAll('#sw-categories .sw-act-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#sw-categories .aa-cat-btn').forEach(b => b.classList.remove('sel'));
 }
 
 /* ── Save to History ── */
