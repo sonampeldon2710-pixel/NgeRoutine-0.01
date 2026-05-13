@@ -397,19 +397,28 @@
         <img src="myroutine.jpg" alt="Logo" class="app-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="app-logo-spt-fallback" style="display:none">SPT</span>
       </div>
     </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('check-in')">Check-In</button>
+      <button class="nav-tab" onclick="showTab('tracker')">📋 Tracker</button>
+      <button class="nav-tab" onclick="showTab('history')">📅 History</button>
+      <button class="nav-tab" onclick="showTab('trends')">📈 Trends</button>
+    </div>
+    
     <div class="user-pill" onclick="openSettings()" title="Settings">
       <div class="user-avatar" id="hdr-avatar"></div>
       <span class="user-pill-name" id="hdr-name"></span>
       <span class="user-pill-caret">⚙</span>
     </div>
+
   </div>
 
-  <div class="nav-tabs">
+  <!-- <div class="nav-tabs">
     <button class="nav-tab active" onclick="showTab('check-in')">Check-In</button>
     <button class="nav-tab" onclick="showTab('tracker')">📋 Tracker</button>
     <button class="nav-tab" onclick="showTab('history')">📅 History</button>
     <button class="nav-tab" onclick="showTab('trends')">📈 Trends</button>
-  </div>
+  </div> -->
 
   <!-- ── CHECK-IN TAB ── -->
   <div id="tab-check-in" class="tab-pane active">

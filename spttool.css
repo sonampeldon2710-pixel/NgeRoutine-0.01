@@ -46,15 +46,15 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 
 /* ── APP ── */
 #app-screen{flex-direction:column}
-.app-header{background:#fff;border-bottom:.5px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.app-header{background:#fff;border-bottom:.5px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50,}
 .app-logo{display:flex;align-items:center;gap:10px}
 .app-logo-icon{width:34px;height:34px;border-radius:10px;background:var(--green-lt);border:1px solid rgba(29,158,117,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--green-dk);overflow:hidden;padding:4px;flex-shrink:0}
 .app-logo-img{width:100%;height:100%;object-fit:contain;display:block}
 .app-logo-spt-fallback{font-size:11px;font-weight:700;color:var(--green-dk)}
 .app-logo span{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text)}
-.user-pill{display:flex;align-items:center;gap:8px;background:var(--green-lt);border:.5px solid var(--border);border-radius:20px;padding:6px 12px 6px 7px;cursor:pointer;transition:all .2s}
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--white);border:.5px solid var(--border);border-radius:20px;padding:6px 12px 6px 7px;cursor:pointer;transition:all .2s}
 .user-pill:hover{border-color:var(--white)}
-.user-pill-name{font-size:12px;font-weight:500;color:var(--text)}
+.user-pill-name{font-size:11px;font-weight:200;color:var(--text)}
 .user-pill-caret{font-size:13px;color:var(--muted);padding-left:2px;opacity:.7}
 
 /* ── SETTINGS MODAL ── */
@@ -449,6 +449,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
   .app-header {
     padding: 10px 14px;
     flex-wrap: nowrap;
+
   }
   
   .app-logo-icon {
