@@ -22,7 +22,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .auth-card{background:#fff;border-radius:20px;border:1px solid rgba(29,158,117,0.15);box-shadow:var(--shadow-lg);width:100%;max-width:400px;overflow:hidden;position:relative;z-index:1;animation:cardUp .5s cubic-bezier(.22,1,.36,1) both}
 @keyframes cardUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 .auth-top{background:linear-gradient(135deg,#53afe4 50%,#c74651 100%);padding:32px 28px 28px;text-align:center}
-.auth-logo-wrap{width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;padding:6px;backdrop-filter:blur(4px)}
+.auth-logo-wrap{width:180px;height:180px;border-radius:1px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;padding:6px;backdrop-filter:blur(4px)}
 .auth-logo-img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 1px 4px rgba(0,0,0,0.18))}
 .auth-logo-fallback{width:100%;height:100%;border-radius:14px;background:rgba(255,255,255,0.25);align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;letter-spacing:.04em}
 .auth-top h1{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:#fff;line-height:1.25}
@@ -127,6 +127,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .prog-bar{height:4px;background:var(--surf3);border-radius:3px;overflow:hidden}
 .prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s ease}
 
+.box {
+  background: #d7e1f1;
+  border: 1px solid #2f7db1;
+  border-radius: 18px;
+  padding: 20px 14px;
+  box-shadow: 0 2px 4px rgba(139, 10, 10, 0.06);
+  margin-top: 24px; 
+}
 /* ── SECTION HEADERS ── */
 .sec-hdr{display:flex;align-items:center;gap:12px;margin:24px 0 12px}
 .sec-pill{display:flex;align-items:center;gap:7px;padding:5px 14px 5px 8px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid;white-space:nowrap}
