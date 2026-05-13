@@ -38,7 +38,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .field input::placeholder{color:var(--hint)}
 .pw-wrap{position:relative}
 .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px;padding:2px}
-.auth-btn{width:100%;padding:12px;margin-top:4px;background:linear-gradient(135deg,#0F6E56,#1D9E75);border:none;border-radius:var(--rsm);color:#fff;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.auth-btn{width:100%;padding:12px;margin-top:4px;background:linear-gradient(135deg,#c4c120,#c9329b);border:none;border-radius:var(--rsm);color:#fff;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.02em}
 .auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,158,117,0.35)}
 .auth-msg{font-size:12px;margin-top:12px;padding:10px 12px;border-radius:var(--rsm);display:none}
 .auth-msg.err{background:var(--red-lt);color:var(--red);border:1px solid rgba(192,57,43,0.15);display:block}
