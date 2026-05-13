@@ -104,6 +104,12 @@ async function doSignup() {
     });
     const data = await r.json();
     if (!r.ok) return showMsg('su-msg', data.error || 'Signup failed.', 'err');
+    
+    // Save user data locally for password reset fallback
+    const users = _loadUsers();
+    users[user] = { name: name, pass: pass };
+    _saveUsers(users);
+    
     localStorage.setItem('qt_token', data.token);
     showMsg('su-msg', 'Account created! Signing you in…', 'ok');
     setTimeout(() => launchApp({ username: data.user.username, name: data.user.name }), 900)
@@ -126,6 +132,14 @@ async function doLogin() {
     });
     const data = await r.json();
     if (!r.ok) return showMsg('li-msg', data.error || 'Login failed.', 'err');
+    
+    // Save user info locally for reference (no password for security)
+    const users = _loadUsers();
+    if (!users[user]) {
+      users[user] = { name: data.user.name }; // Don't store password
+      _saveUsers(users);
+    }
+    
     localStorage.setItem('qt_token', data.token);
     launchApp({ username: data.user.username, name: data.user.name });
   } catch {
@@ -264,7 +278,7 @@ function toggleForgotPanel() {
     fpMsg.className = 'auth-msg'; fpMsg.textContent = '';
   }
 }
-function doResetPassword() {
+async function doResetPassword() {
   const userId  = document.getElementById('fp-user').value.trim().toLowerCase();
   const newPass = document.getElementById('fp-new-pass').value;
   const confirm = document.getElementById('fp-confirm-pass').value;
@@ -275,22 +289,64 @@ function doResetPassword() {
   if (newPass.length < 6) { msg.textContent = 'Password must be at least 6 characters.'; msg.className = 'auth-msg err'; return; }
   if (newPass !== confirm) { msg.textContent = 'Passwords do not match.'; msg.className = 'auth-msg err'; return; }
 
-  const users = _loadUsers();
-  if (!users[userId]) { msg.textContent = 'No account found with that User ID.'; msg.className = 'auth-msg err'; return; }
+  // Try API first, fall back to local storage if API fails
+  let apiFailed = false;
+  try {
+    const r = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({ username: userId, new_password: newPass })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      msg.textContent = '✓ Password reset! You can now sign in.';
+      msg.className   = 'auth-msg ok';
+      // Pre-fill sign-in and close panel after short delay
+      setTimeout(() => {
+        document.getElementById('li-user').value = userId;
+        document.getElementById('li-pass').value = '';
+        document.getElementById('forgot-panel').style.display = 'none';
+        const fpMsg = document.getElementById('fp-msg');
+        fpMsg.className = 'auth-msg'; fpMsg.textContent = '';
+      }, 1800);
+      return;
+    }
+    // If API returns user not found, don't fall back to local
+    if (data.error && data.error.toLowerCase().includes('not found')) {
+      msg.textContent = 'No account found with that User ID.';
+      msg.className = 'auth-msg err';
+      return;
+    }
+    // Other API errors, fall back to local storage
+    apiFailed = true;
+  } catch {
+    // Network error, fall back to local storage
+    apiFailed = true;
+  }
 
-  users[userId].pass = newPass;
-  _saveUsers(users);
+  if (apiFailed) {
+    // Fallback: local storage method
+    const users = _loadUsers();
+    if (!users[userId]) { 
+      msg.textContent = 'No account found with that User ID. Please check your User ID or contact support.';
+      msg.className = 'auth-msg err'; 
+      return; 
+    }
 
-  msg.textContent = '✓ Password reset! You can now sign in.';
-  msg.className   = 'auth-msg ok';
-  // Pre-fill sign-in and close panel after short delay
-  setTimeout(() => {
-    document.getElementById('li-user').value = userId;
-    document.getElementById('li-pass').value = '';
-    document.getElementById('forgot-panel').style.display = 'none';
-    const fpMsg = document.getElementById('fp-msg');
-    fpMsg.className = 'auth-msg'; fpMsg.textContent = '';
-  }, 1800);
+    users[userId].pass = newPass;
+    _saveUsers(users);
+
+    msg.textContent = '✓ Password reset! You can now sign in.';
+    msg.className   = 'auth-msg ok';
+    // Pre-fill sign-in and close panel after short delay
+    setTimeout(() => {
+      document.getElementById('li-user').value = userId;
+      document.getElementById('li-pass').value = '';
+      document.getElementById('forgot-panel').style.display = 'none';
+      const fpMsg = document.getElementById('fp-msg');
+      fpMsg.className = 'auth-msg'; fpMsg.textContent = '';
+    }, 1800);
+  }
 }
 
 
