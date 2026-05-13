@@ -1,6 +1,6 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#39c55c;--green-lt:#ECEFFE;--green-dk:#aa4545;
+  --green:#7986CB;--green-lt:#ECEFFE;--green-dk:#4A5BA8;
   --amber:#4DD0E1;--amber-lt:#E8FAFB;
   --red:#F48FB1;--red-lt:#FEF0F5;
   --purple:#BA68C8;--purple-lt:#F8EEFA;
