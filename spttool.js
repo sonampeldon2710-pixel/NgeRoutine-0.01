@@ -834,47 +834,69 @@ function buildLocalFeedback(a, la, sc) {
 
   if (highPhone && (outcomePoor || !feelRested)) {
     track('statcan');
-    improvements.push(`Continuous screen time without breaks may lead to eye strain...`);
+    improvements.push(`Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks from screens every 30 minutes can help protect your vision and mental clarity.`);
   }
   if (medPhone && outcomePoor) {
     track('statcan');
-    improvements.push(`Using your phone ${phone} before bed is likely making your sleep lighter...`);
+    improvements.push(`Using your phone ${phone} before bed is likely making your sleep lighter. Cutting that down even by 30 minutes can make a real difference to how rested you feel.`);
   }
   if (shortSleep && outcomePoor) {
     track('aasm');
-    improvements.push(`Sleeping less than 7 hours may increase the risk of stroke...`);
+    improvements.push(`Sleeping less than 7 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`);
+  }
+  if (shortSleep && outcomeGood) {  // ← polite version when they feel fine
+    track('aasm');
+    improvements.push(`That's great that you're feeling good! Though sleeping less than 7 hours can still carry risks over time — research links it to increased chances of stroke, poor health, and early death. It may be worth gradually working toward 7–9 hours to protect your long-term well-being.`);
   }
   if (overwork && outcomePoor) {
     track('springer');
-    improvements.push(`Working ${workhours} a day makes it hard for your body to switch off...`);
+    improvements.push(`Working ${workhours} a day makes it hard for your body to switch off at night. Researcch suggest that working for longer hours increase the risk of stroke, heart disease, stress, fatigue, and long-term health complications.
+      
+    Try stopping all work at least 1 hour before bed even a short walk helps your body wind down.`);
+  }
+  if (overwork && outcomeGood) {  // ← polite version when they feel fine
+    track('springer');
+    improvements.push(`It's great you're feeling okay! That said, working ${workhours} a day can still quietly wear on your body over time. Research suggests long working hours affect sleep quality even when it doesn't feel that way yet and also increase the risk of stroke, heart disease, stress, fatigue, and long-term health complications.. Winding down at least 1 hour before bed can help protect you long term.`);
   }
   if (lateNight && outcomePoor) {
     track('guardian');
-    improvements.push(`Going to bed ${bedtime} is quite late...`);
+    improvements.push(`Going to bed ${bedtime} is quite late. Your body sleeps best within a regular window. Try shifting your bedtime just 15 minutes earlier each week.`);
   }
+  
+  if (bedtime === '9–10 pm') {
+  improvements.push(`Great timing! Going to bed between 9–10 PM lets your body follow its natural rhythm — melatonin rises and your body starts preparing for deep sleep right on schedule.`);
+  } else if (bedtime === '10–11 pm') {
+    improvements.push(`Sleeping between 10–11 PM is a solid window. Your growth hormone activates and tissue repair begins around 10 PM, so you're giving your body the recovery time it needs.`);
+  } else if (bedtime === '11 pm–midnight') {
+    improvements.push(`Going to bed between 11 PM–midnight means you may be missing the liver detox and energy restoration phase that peaks around 11 PM. Try shifting your bedtime a little earlier when you can.`);
+  } else if (bedtime === 'After midnight') {
+    improvements.push(`Going to bed after midnight means your brain misses its key toxin-clearing and memory processing window around 12 AM, and you may be cutting into your deepest recovery sleep at 1–2 AM. Even shifting 30 minutes earlier can help your body catch up.`);
+  }
+
+
   if (hardSleep) {
     track('statcan');
-    improvements.push(`You find it hard to fall asleep...`);
+    improvements.push(`You find it hard to fall asleep. Your brain needs a signal that it's time to rest. Try a calm, screen-free wind-down for 20 minutes before bed do reading, stretching, or just dim lights.`);
   }
   if (highPhone && outcomeGood) {
     track('statcan');
-    improvements.push(`Even though you feel okay, more hours of screen time can still affect...`);
+    improvements.push(`Even though you feel okay, more hours of screen time can still affect your eyes and focus over time. Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks helps protect your long-term health.`);
   }
   if (longSleep && !feelEnergy) {
     track('springer');
-    improvements.push(`Sleeping more than 9 hours may increase the risk of stroke...`);
+    improvements.push(`Sleeping more than 9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`);
+  }
+  if (longSleep && feelEnergy) {  // ← polite version when they feel fine
+    track('springer');
+    improvements.push(`Glad you're feeling energised! Even so, consistently sleeping more than 9 hours has been linked to increased health risks including stroke and poor long-term health. It may be worth checking in with a doctor if long sleep is a regular pattern for you.`);
   }
 
-  // Fallback only if nothing matched
   if (improvements.length === 0) {
     track('guardian');
-    improvements.push(`Try going to bed and waking up at the same time every day...`);
+    improvements.push(`Try going to bed and waking up at the same time every day even on weekends. It's one of the simplest habits that makes a real difference.`);
   }
 
-  const areaOfImprovement = improvements.join('\n\n');
-
-
-
+  const areaOfImprovement = improvements.join('<br><br>');
 
   /* ══════════════════════════════════
      3. YOUR 3 STEPS  (replaces research bullets + 8-8-8 actions)
