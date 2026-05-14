@@ -804,7 +804,7 @@ function buildLocalFeedback(a, la, sc) {
   let areaOfImprovement = '';
   if (highPhone && (outcomePoor || !feelRested)) {
     track('statcan');
-    areaOfImprovement = `You use your phone ${phone} before bed. Phone screens trick your brain into thinking it's still daytime  making it harder to fall into deep sleep, even if you don't notice it.`;
+    areaOfImprovement = `Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks from screens every 30 minutes can help protect your vision and mental clarity.`;
   } else if (medPhone && outcomePoor) {
     track('statcan');
     areaOfImprovement = `Using your phone ${phone} before bed is likely making your sleep lighter. Cutting that down even by 30 minutes can make a real difference to how rested you feel.`;
@@ -822,7 +822,7 @@ function buildLocalFeedback(a, la, sc) {
     areaOfImprovement = `You find it hard to fall asleep. Your brain needs a signal that it's time to rest. Try a calm, screen-free wind-down for 20 minutes before bed do reading, stretching, or just dim lights.`;
   } else if (highPhone && outcomeGood) {
     track('statcan');
-    areaOfImprovement = `You feel okay now, but ${phone} of phone use before bed is slowly affecting your sleep depth. Moving phone time earlier in the evening is the easiest win.`;
+    areaOfImprovement = `Even though you feel okay, more hours of screen time can still affect your eyes and focus over time. Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks helps protect your long-term health.`;
   } else if (longSleep && !feelEnergy) {
     track('springer');
     areaOfImprovement = `Sleeping more than 8–9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
@@ -844,7 +844,7 @@ function buildLocalFeedback(a, la, sc) {
 
   if (noPhone)              { track('statcan'); actions.push(`📵 Keep your phone away before bed, that habit is working`); }
   else if (lowPhone)        { track('statcan'); actions.push(`📵 Try cutting your pre-bed phone time from ${phone} to under 30 minutes`); }
-  else if (medPhone||highPhone) { track('statcan'); actions.push(`📵 Avoid using your phone or other screens during the final 30 minutes before sleeping because screens can make it harder to fall asleep.`); }
+  else if (medPhone||highPhone) { track('statcan'); actions.push(`📵 Take a 10-minute screen break every 30 minutes to reduce eye strain and improve focus. Continuous screen time without breaks can lead to fatigue and reduced productivity.`); }
   else                      {                   actions.push(`📵 Put your phone away 30 minutes before you sleep`); }
 
   if (lateNight)      { track('guardian'); actions.push(`🌙 Try sleeping 15 minutes earlier each week, small changes are easier to maintain.`); }
@@ -860,7 +860,7 @@ function buildLocalFeedback(a, la, sc) {
   if (outcomeGood) {
     gentleReminder = `You're already doing the important things right, consistency is all you need to keep feeling this good.`;
   } else if (highPhone) {
-    gentleReminder = `You don't need to stop using your phone, just move it earlier in your evening. One small shift, big result.`;
+    gentleReminder = `More hours of screen time without breaks can lead to eye strain and fatigue. Short breaks every 30 minutes make a real difference to how you feel.`;
   } else if (shortSleep) {
     gentleReminder = `Small gradual changes are easier and more effective than sudden big changes.`;
   } else if (overwork) {
