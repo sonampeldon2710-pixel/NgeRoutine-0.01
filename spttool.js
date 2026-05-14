@@ -47,6 +47,7 @@ function getUserData() {
       _currentData = { logs:[], alarms:{}, habitEnabled:{}, selectedSounds:{}, customSounds:{}, checkInHistory:[], quickAlarms:[] };
     }
     if (!_currentData.quickAlarms) _currentData.quickAlarms = [];
+    normalizeLogDates(_currentData);
   }
   return _currentData;
 }
@@ -54,6 +55,34 @@ function getUserData() {
 function saveUserData() {
   if (!currentUser || !_currentData) return;
   localStorage.setItem('qt_data_' + currentUser.username, JSON.stringify(_currentData));
+}
+
+function normalizeDateValue(value) {
+  if (!value) return '';
+  if (typeof value !== 'string') {
+    const parsed = new Date(value);
+    if (!isNaN(parsed)) value = parsed.toISOString();
+    else return '';
+  }
+  const datePart = value.split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+  const parsed = new Date(value);
+  return !isNaN(parsed) ? parsed.toISOString().split('T')[0] : '';
+}
+
+function normalizeLogDates(ud) {
+  if (!ud || !Array.isArray(ud.logs)) return;
+  let changed = false;
+  ud.logs.forEach(l => {
+    if (l && l.date) {
+      const normalized = normalizeDateValue(l.date);
+      if (normalized && l.date !== normalized) {
+        l.date = normalized;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveUserData();
 }
 
 /* ═══════════════════════════════════════
@@ -1740,12 +1769,13 @@ async function renderTrends(){
               habitId: l.habit_id,
               habitName: l.habit_name,
               habitIcon: l.habit_icon || '📋',
-              date: l.date,
+              date: normalizeDateValue(l.date),
               duration: l.duration,
               unit: l.unit || 'hrs',
               note: l.note
             });
           });
+          normalizeLogDates(ud);
           saveUserData();
         }
       }
@@ -1814,17 +1844,6 @@ async function renderTrends(){
   card.className='chart-card';
   card.style.cssText='padding:20px 16px 16px';
 
-  /* Build legend chips — clickable */
-  function buildLegendHTML(focusKey){
-    return allDatasets.map((ds,i)=>{
-      const color=TREND_PALETTE[i%TREND_PALETTE.length];
-      const isActive = !focusKey || focusKey===ds._key;
-      const opacity = isActive ? '1' : '0.35';
-      const fw = isActive ? '600' : '400';
-      return `<span class="trend-legend-chip" data-key="${ds._key}" style="--chip-color:${color};opacity:${opacity};font-weight:${fw};cursor:pointer;transition:opacity .2s">${ds.label}</span>`;
-    }).join('');
-  }
-
   /* Build trend badges — clickable */
   function buildBadgesHTML(focusKey){
     return activityKeys.map((key,i)=>{
@@ -1857,13 +1876,72 @@ async function renderTrends(){
   card.innerHTML=`
     <div class="chart-title" style="margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">📈 Activity Trends<span id="trend-focus-label">${focusLabel(_trendFocusKey)}</span></div>
     <div class="chart-sub" style="margin-bottom:14px">Daily hours per activity · hover dots for info · <strong>click an activity</strong> to isolate its trendline</div>
-    <div class="trend-legend-row" id="trend-legend-row">${buildLegendHTML(_trendFocusKey)}</div>
+    <div id="trend-legend-row" style="margin-bottom:14px"></div>
     <div style="position:relative;width:100%;height:260px;margin-top:12px">
       <canvas id="chart-combined-trends" role="img" aria-label="Combined activity trends chart"></canvas>
     </div>
     <div class="trend-acts-grid" id="trend-acts-grid" style="margin-top:16px">${buildBadgesHTML(_trendFocusKey)}</div>`;
 
   content.appendChild(card);
+  
+  /* Build hamburger menu for trend activities */
+  const legendRow = document.getElementById('trend-legend-row');
+  if (legendRow) {
+    const hamburgerContainer = document.createElement('div');
+    hamburgerContainer.style.cssText = 'position:relative;display:inline-block';
+    
+    const hamburgerBtn = document.createElement('button');
+    hamburgerBtn.type = 'button';
+    hamburgerBtn.textContent = '☰ Activities';
+    hamburgerBtn.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);cursor:pointer;font-size:13px;font-weight:500';
+    
+    const dropdown = document.createElement('div');
+    dropdown.id = 'trend-filter-dropdown';
+    dropdown.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:180px;display:none;flex-direction:column';
+    
+    // "All" option
+    const allOption = document.createElement('button');
+    allOption.type = 'button';
+    allOption.textContent = '🗂 All';
+    allOption.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${!_trendFocusKey ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s;border-bottom:1px solid var(--border)`;
+    allOption.onmouseover = () => allOption.style.background = 'var(--green-lt)';
+    allOption.onmouseout = () => allOption.style.background = !_trendFocusKey ? 'var(--green-lt)' : 'transparent';
+    allOption.onclick = () => { applyFocus(null); dropdown.style.display = 'none'; };
+    dropdown.appendChild(allOption);
+    
+    // Build activity options
+    activityKeys.forEach((key, idx) => {
+      const act = byActivity[key];
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.textContent = act.icon + ' ' + act.name;
+      option.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${_trendFocusKey === key ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s`;
+      option.onmouseover = () => option.style.background = 'var(--green-lt)';
+      option.onmouseout = () => option.style.background = _trendFocusKey === key ? 'var(--green-lt)' : 'transparent';
+      option.onclick = () => { applyFocus(_trendFocusKey === key ? null : key); dropdown.style.display = 'none'; };
+      dropdown.appendChild(option);
+    });
+    
+    hamburgerBtn.onclick = () => {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+    };
+    
+    hamburgerContainer.appendChild(hamburgerBtn);
+    hamburgerContainer.appendChild(dropdown);
+    legendRow.appendChild(hamburgerContainer);
+    
+    // Close dropdown when clicking outside
+    setTimeout(() => {
+      const closeDropdown = (e) => {
+        if (!hamburgerContainer.contains(e.target) && dropdown.style.display === 'flex') {
+          dropdown.style.display = 'none';
+        }
+      };
+      document.addEventListener('click', closeDropdown);
+      if (window._trendDropdownListener) document.removeEventListener('click', window._trendDropdownListener);
+      window._trendDropdownListener = closeDropdown;
+    }, 0);
+  }
 
   /* ── Helper: get datasets filtered by focus ── */
   function getVisibleDatasets(focusKey){
@@ -1883,17 +1961,13 @@ async function renderTrends(){
       ch._draw();
     }
 
-    // Update legend chips
-    const legendRow = document.getElementById('trend-legend-row');
-    if(legendRow) legendRow.innerHTML = buildLegendHTML(focusKey);
-
-    // Re-attach legend chip listeners
-    document.querySelectorAll('#trend-legend-row .trend-legend-chip').forEach(chip=>{
-      chip.addEventListener('click', ()=>{
-        const k = chip.dataset.key;
-        applyFocus(_trendFocusKey===k ? null : k);
-      });
-    });
+    // Update focus label
+    const lbl = document.getElementById('trend-focus-label');
+    if(lbl){
+      lbl.innerHTML = focusLabel(focusKey);
+      const clearBtn = document.getElementById('trend-clear-focus');
+      if(clearBtn) clearBtn.addEventListener('click', e=>{ e.stopPropagation(); applyFocus(null); });
+    }
 
     // Update badges
     const grid = document.getElementById('trend-acts-grid');
@@ -1906,14 +1980,6 @@ async function renderTrends(){
         applyFocus(_trendFocusKey===k ? null : k);
       });
     });
-
-    // Update focus label
-    const lbl = document.getElementById('trend-focus-label');
-    if(lbl){
-      lbl.innerHTML = focusLabel(focusKey);
-      const clearBtn = document.getElementById('trend-clear-focus');
-      if(clearBtn) clearBtn.addEventListener('click', e=>{ e.stopPropagation(); applyFocus(null); });
-    }
   }
 
   /* ── 5. Render chart ── */
@@ -1960,21 +2026,6 @@ async function renderTrends(){
     });
 
     /* Wire legend chip clicks after chart is ready */
-    document.querySelectorAll('#trend-legend-row .trend-legend-chip').forEach(chip=>{
-      chip.addEventListener('click', ()=>{
-        const k = chip.dataset.key;
-        applyFocus(_trendFocusKey===k ? null : k);
-      });
-    });
-
-    /* Wire badge clicks */
-    document.querySelectorAll('#trend-acts-grid .trend-act-badge').forEach(badge=>{
-      badge.addEventListener('click', ()=>{
-        const k = badge.dataset.key;
-        applyFocus(_trendFocusKey===k ? null : k);
-      });
-    });
-
     /* Wire clear-focus button if focus is already active */
     const clearBtn = document.getElementById('trend-clear-focus');
     if(clearBtn) clearBtn.addEventListener('click', e=>{ e.stopPropagation(); applyFocus(null); });
@@ -2237,23 +2288,68 @@ function renderHistory() {
 
   const habitIds = [...new Set(ud.logs.map(l => l.habitId))];
   filterWrap.innerHTML = '';
-  const allBtn = document.createElement('button');
-  allBtn.className = 'sound-btn' + (historyFilter === 'all' ? ' sel' : '');
-  allBtn.textContent = '🗂 All';
-  allBtn.onclick = () => { historyFilter = 'all'; renderHistory(); };
-  filterWrap.appendChild(allBtn);
-
+  
+  // Hamburger menu container
+  const hamburgerContainer = document.createElement('div');
+  hamburgerContainer.style.cssText = 'position:relative;display:inline-block';
+  
+  // Hamburger button
+  const hamburgerBtn = document.createElement('button');
+  hamburgerBtn.type = 'button';
+  hamburgerBtn.textContent = '☰ Activities';
+  hamburgerBtn.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);cursor:pointer;font-size:13px;font-weight:500';
+  
+  // Dropdown menu
+  const dropdown = document.createElement('div');
+  dropdown.id = 'history-filter-dropdown';
+  dropdown.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:180px;display:none;flex-direction:column';
+  
+  // "All" option
+  const allOption = document.createElement('button');
+  allOption.type = 'button';
+  allOption.textContent = '🗂 All';
+  allOption.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${historyFilter === 'all' ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s;border-bottom:1px solid var(--border)`;
+  allOption.onmouseover = () => allOption.style.background = 'var(--green-lt)';
+  allOption.onmouseout = () => allOption.style.background = historyFilter === 'all' ? 'var(--green-lt)' : 'transparent';
+  allOption.onclick = () => { historyFilter = 'all'; dropdown.style.display = 'none'; renderHistory(); };
+  dropdown.appendChild(allOption);
+  
   // Build unique categories from logs — exclude quick alarms
   const seen = new Set();
   ud.logs.filter(l => !l.isQuickAlarm).forEach(l => {
     if(seen.has(l.habitId)) return;
     seen.add(l.habitId);
-    const btn = document.createElement('button');
-    btn.className = 'sound-btn' + (historyFilter === l.habitId ? ' sel' : '');
-    btn.textContent = l.habitIcon + ' ' + l.habitName;
-    btn.onclick = () => { historyFilter = l.habitId; renderHistory(); };
-    filterWrap.appendChild(btn);
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.textContent = l.habitIcon + ' ' + l.habitName;
+    option.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${historyFilter === l.habitId ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s`;
+    option.onmouseover = () => option.style.background = 'var(--green-lt)';
+    option.onmouseout = () => option.style.background = historyFilter === l.habitId ? 'var(--green-lt)' : 'transparent';
+    option.onclick = () => { historyFilter = l.habitId; dropdown.style.display = 'none'; renderHistory(); };
+    dropdown.appendChild(option);
   });
+  
+  // Toggle dropdown on hamburger click
+  hamburgerBtn.onclick = () => {
+    dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+  };
+  
+  hamburgerContainer.appendChild(hamburgerBtn);
+  hamburgerContainer.appendChild(dropdown);
+  filterWrap.appendChild(hamburgerContainer);
+  
+  // Close dropdown when clicking outside
+  setTimeout(() => {
+    const closeDropdown = (e) => {
+      if (!hamburgerContainer.contains(e.target) && dropdown.style.display === 'flex') {
+        dropdown.style.display = 'none';
+      }
+    };
+    document.addEventListener('click', closeDropdown);
+    // Clean up previous listeners (simple approach)
+    if (window._historyDropdownListener) document.removeEventListener('click', window._historyDropdownListener);
+    window._historyDropdownListener = closeDropdown;
+  }, 0);
 
   const logs = ud.logs
     .filter(l => !l.isQuickAlarm && (historyFilter === 'all' || l.habitId === historyFilter))
@@ -2262,13 +2358,12 @@ function renderHistory() {
 
   const byDate = {};
   logs.forEach(l => {
-    if (!byDate[l.date]) byDate[l.date] = [];
-    byDate[l.date].push(l);
+    const dateKey = normalizeDateValue(l.date);
+    if (!byDate[dateKey]) byDate[dateKey] = [];
+    byDate[dateKey].push(l);
   });
 
   content.innerHTML = '';
-  /* ── Summary first, then dated entries below ── */
-  _renderActivitySummary(content, ud);
 
   Object.keys(byDate).sort((a,b) => b.localeCompare(a)).forEach(dateStr => {
     const heading = document.createElement('div');
@@ -2276,7 +2371,17 @@ function renderHistory() {
     const isToday = dateStr === new Date().toISOString().split('T')[0];
     const isYesterday = dateStr === new Date(Date.now() - 86400000).toISOString().split('T')[0];
     const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
-    heading.innerHTML = `<div style="font-size:11px;font-weight:600;color:var(--hint);letter-spacing:.07em;text-transform:uppercase;padding:16px 0 8px;border-top:.5px solid var(--border);margin-top:4px">${label}</div>`;
+    heading.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 0 8px;border-top:.5px solid var(--border);margin-top:4px';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;font-weight:600;color:var(--hint);letter-spacing:.07em;text-transform:uppercase;';
+    title.textContent = label;
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.textContent = 'Clear day';
+    clearBtn.style.cssText = 'font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer';
+    clearBtn.onclick = () => clearLogsByDate(dateStr);
+    heading.appendChild(title);
+    heading.appendChild(clearBtn);
     content.appendChild(heading);
 
     byDate[dateStr].forEach(l => {
@@ -2303,6 +2408,7 @@ function renderHistory() {
 }
 
 function _renderActivitySummary(container, ud) {
+  return; // Summary section removed per user request
   // Always aggregate ALL logs (ignore current historyFilter) so summary is always complete
   const allLogs = ud.logs.filter(l => !l.isQuickAlarm);
   if (!allLogs.length) return;
@@ -2370,6 +2476,19 @@ function deleteLog(logId) {
   renderTrends();
 }
 
+function clearLogsByDate(dateStr) {
+  const ud = getUserData();
+  if (!ud) return;
+  const normalizedDate = normalizeDateValue(dateStr);
+  if (!normalizedDate) return;
+  ud.logs = ud.logs.filter(l => normalizeDateValue(l.date) !== normalizedDate);
+  saveUserData();
+  renderHistory();
+  renderCalendar();
+  renderCalendar2();
+  renderTrends();
+}
+
 /* ═══════════════════════════════════════
    EXPORT
 ═══════════════════════════════════════ */
@@ -2377,7 +2496,7 @@ function exportCSV(){
   const ud=getUserData();
   if(!ud||!ud.logs.length){alert('No logs to export yet.');return;}
   const rows=[['Date','Habit','Duration','Unit','Start','End','Note']];
-  ud.logs.forEach(l=>rows.push([l.date,l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
+  ud.logs.forEach(l=>rows.push([normalizeDateValue(l.date),l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
@@ -2390,7 +2509,7 @@ function exportExcel(){
   const ud=getUserData();
   if(!ud||!ud.logs.length){alert('No logs to export yet.');return;}
   const rows=[['Date','Habit','Duration','Unit','Start Time','End Time','Note']];
-  ud.logs.forEach(l=>rows.push([l.date,l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
+  ud.logs.forEach(l=>rows.push([normalizeDateValue(l.date),l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
   const header=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>td{font-family:Calibri,sans-serif;font-size:11pt;padding:4px 8px;border:1px solid #ccc}th{background:#1D9E75;color:#fff;font-weight:600}</style></head><body><table>`;
   const htmlRows=rows.map((r,i)=>`<tr>${r.map(c=>`<${i===0?'th':'td'}>${c}</${i===0?'th':'td'}>`).join('')}</tr>`).join('');
   const html=header+htmlRows+'</table></body></html>';
@@ -3053,6 +3172,7 @@ function renderTrackerSchedules() {
 }
 
 function _renderTrackerSummary(container, ud) {
+  return; // Tracker summary removed per user request
   if (!ud || !ud.logs) return;
   const allLogs = ud.logs.filter(l => !l.isQuickAlarm);
   if (!allLogs.length) return;
