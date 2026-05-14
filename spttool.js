@@ -801,35 +801,80 @@ function buildLocalFeedback(a, la, sc) {
      2. ONE THING TO WORK ON
      — specific, kind, no inline citation
   ══════════════════════════════════ */
-  let areaOfImprovement = '';
+  // let areaOfImprovement = '';
+  // if (highPhone && (outcomePoor || !feelRested)) {
+  //   track('statcan');
+  //   areaOfImprovement = `Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks from screens every 30 minutes can help protect your vision and mental clarity.`;
+  // } else if (medPhone && outcomePoor) {
+  //   track('statcan');
+  //   areaOfImprovement = `Using your phone ${phone} before bed is likely making your sleep lighter. Cutting that down even by 30 minutes can make a real difference to how rested you feel.`;
+  // } else if (shortSleep && outcomePoor) {
+  //   track('aasm');
+  //   areaOfImprovement = `Sleeping less than 7 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
+  // } else if (overwork && outcomePoor) {
+  //   track('springer');
+  //   areaOfImprovement = `Working ${workhours} a day makes it hard for your body to switch off at night. Try stopping all work at least 1 hour before bed even a short walk helps your body wind down.`;
+  // } else if (lateNight && outcomePoor) {
+  //   track('guardian');
+  //   areaOfImprovement = `Going to bed ${bedtime} is quite late. Your body sleeps best within a regular window. Try shifting your bedtime just 15 minutes earlier each week.`;
+  // } else if (hardSleep) {
+  //   track('statcan');
+  //   areaOfImprovement = `You find it hard to fall asleep. Your brain needs a signal that it's time to rest. Try a calm, screen-free wind-down for 20 minutes before bed do reading, stretching, or just dim lights.`;
+  // } else if (highPhone && outcomeGood) {
+  //   track('statcan');
+  //   areaOfImprovement = `Even though you feel okay, more hours of screen time can still affect your eyes and focus over time. Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks helps protect your long-term health.`;
+  // } else if (longSleep && !feelEnergy) {
+  //   track('springer');
+  //   areaOfImprovement = `Sleeping more than 9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
+  // } else {
+  //   track('guardian');
+  //   areaOfImprovement = `Try going to bed and waking up at the same time every day even on weekends. It's one of the simplest habits that makes a real difference.`;
+  // }
+  const improvements = [];
+
   if (highPhone && (outcomePoor || !feelRested)) {
     track('statcan');
-    areaOfImprovement = `Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks from screens every 30 minutes can help protect your vision and mental clarity.`;
-  } else if (medPhone && outcomePoor) {
-    track('statcan');
-    areaOfImprovement = `Using your phone ${phone} before bed is likely making your sleep lighter. Cutting that down even by 30 minutes can make a real difference to how rested you feel.`;
-  } else if (shortSleep && outcomePoor) {
-    track('aasm');
-    areaOfImprovement = `Sleeping less than 7 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
-  } else if (overwork && outcomePoor) {
-    track('springer');
-    areaOfImprovement = `Working ${workhours} a day makes it hard for your body to switch off at night. Try stopping all work at least 1 hour before bed even a short walk helps your body wind down.`;
-  } else if (lateNight && outcomePoor) {
-    track('guardian');
-    areaOfImprovement = `Going to bed ${bedtime} is quite late. Your body sleeps best within a regular window. Try shifting your bedtime just 15 minutes earlier each week.`;
-  } else if (hardSleep) {
-    track('statcan');
-    areaOfImprovement = `You find it hard to fall asleep. Your brain needs a signal that it's time to rest. Try a calm, screen-free wind-down for 20 minutes before bed do reading, stretching, or just dim lights.`;
-  } else if (highPhone && outcomeGood) {
-    track('statcan');
-    areaOfImprovement = `Even though you feel okay, more hours of screen time can still affect your eyes and focus over time. Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks helps protect your long-term health.`;
-  } else if (longSleep && !feelEnergy) {
-    track('springer');
-    areaOfImprovement = `Sleeping more than 9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
-  } else {
-    track('guardian');
-    areaOfImprovement = `Try going to bed and waking up at the same time every day even on weekends. It's one of the simplest habits that makes a real difference.`;
+    improvements.push(`Continuous screen time without breaks may lead to eye strain...`);
   }
+  if (medPhone && outcomePoor) {
+    track('statcan');
+    improvements.push(`Using your phone ${phone} before bed is likely making your sleep lighter...`);
+  }
+  if (shortSleep && outcomePoor) {
+    track('aasm');
+    improvements.push(`Sleeping less than 7 hours may increase the risk of stroke...`);
+  }
+  if (overwork && outcomePoor) {
+    track('springer');
+    improvements.push(`Working ${workhours} a day makes it hard for your body to switch off...`);
+  }
+  if (lateNight && outcomePoor) {
+    track('guardian');
+    improvements.push(`Going to bed ${bedtime} is quite late...`);
+  }
+  if (hardSleep) {
+    track('statcan');
+    improvements.push(`You find it hard to fall asleep...`);
+  }
+  if (highPhone && outcomeGood) {
+    track('statcan');
+    improvements.push(`Even though you feel okay, more hours of screen time can still affect...`);
+  }
+  if (longSleep && !feelEnergy) {
+    track('springer');
+    improvements.push(`Sleeping more than 9 hours may increase the risk of stroke...`);
+  }
+
+  // Fallback only if nothing matched
+  if (improvements.length === 0) {
+    track('guardian');
+    improvements.push(`Try going to bed and waking up at the same time every day...`);
+  }
+
+  const areaOfImprovement = improvements.join('\n\n');
+
+
+
 
   /* ══════════════════════════════════
      3. YOUR 3 STEPS  (replaces research bullets + 8-8-8 actions)
