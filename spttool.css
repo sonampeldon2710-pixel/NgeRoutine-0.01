@@ -89,8 +89,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .settings-signout-btn:hover{background:var(--red-lt);color:var(--red);border-color:rgba(192,57,43,.2)}
 
 /* ── NAV TABS ── */
-.nav-tabs{display:flex;background:#fff;border-bottom:.5px solid var(--border);padding:0 16px;gap:4px;overflow-x:auto;position:sticky;top:62px;z-index:40}
-.nav-tab{padding:12px 14px;font-size:12px;font-weight:500;color:var(--muted);border:none;background:none;cursor:pointer;font-family:'Sora',sans-serif;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.nav-tabs{display:flex;background:#fff;border-bottom:.5px solid var(--border);padding:0 16px;gap:20px;overflow-x:auto;position:sticky;top:62px;z-index:40}
+.nav-tab{padding:12px 14px;font-size:17px;font-weight:500;color:var(--muted);border:none;background:none;cursor:pointer;font-family:'Sora',sans-serif;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
 .nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .nav-tab:hover{color:var(--text)}
 
