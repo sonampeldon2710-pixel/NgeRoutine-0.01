@@ -825,7 +825,7 @@ function buildLocalFeedback(a, la, sc) {
     areaOfImprovement = `Even though you feel okay, more hours of screen time can still affect your eyes and focus over time. Continuous screen time without breaks may lead to eye strain, fatigue, and reduced focus. Taking regular breaks helps protect your long-term health.`;
   } else if (longSleep && !feelEnergy) {
     track('springer');
-    areaOfImprovement = `Sleeping more than 8–9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
+    areaOfImprovement = `Sleeping more than 9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
   } else {
     track('guardian');
     areaOfImprovement = `Try going to bed and waking up at the same time every day even on weekends. It's one of the simplest habits that makes a real difference.`;
