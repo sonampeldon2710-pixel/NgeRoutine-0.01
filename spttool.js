@@ -846,7 +846,7 @@ function buildLocalFeedback(a, la, sc) {
   }
   if (shortSleep && outcomeGood) {  // ← polite version when they feel fine
     track('aasm');
-    improvements.push(`That's great that you're feeling good! Though sleeping less than 7 hours can still carry risks over time — research links it to increased chances of stroke, poor health, and early death. It may be worth gradually working toward 7–9 hours to protect your long-term well-being.`);
+    improvements.push(`That's great that you're feeling good! Though sleeping less than 7 hours can still carry risks over time. Research links it to increased chances of stroke, poor health, and early death. It may be worth gradually working toward 7–8 hours to protect your long-term well-being.`);
   }
   if (overwork && outcomePoor) {
     track('springer');
@@ -856,19 +856,23 @@ function buildLocalFeedback(a, la, sc) {
   }
   if (overwork && outcomeGood) {  // ← polite version when they feel fine
     track('springer');
-    improvements.push(`It's great you're feeling okay! That said, working ${workhours} a day can still quietly wear on your body over time. Research suggests long working hours affect sleep quality even when it doesn't feel that way yet and also increase the risk of stroke, heart disease, stress, fatigue, and long-term health complications.. Winding down at least 1 hour before bed can help protect you long term.`);
+    improvements.push(`It's great you're feeling okay! That said, working ${workhours} a day can still quietly wear on your body over time. 
+      
+    Research suggests long working hours affect sleep quality and also increase the risk of stroke, heart disease, stress, fatigue, and long-term health complications. 
+    
+    Winding down at least 1 hour before bed can help protect you long term.`);
   }
   if (lateNight && outcomePoor) {
     track('guardian');
     improvements.push(`Going to bed ${bedtime} is quite late. Your body sleeps best within a regular window. Try shifting your bedtime just 15 minutes earlier each week.`);
   }
-  
+
   if (bedtime === '9–10 pm') {
-  improvements.push(`Great timing! Going to bed between 9–10 PM lets your body follow its natural rhythm — melatonin rises and your body starts preparing for deep sleep right on schedule.`);
+  improvements.push(`Great timing! Going to bed between 9–10 PM lets your body follow its natural rhythm where melatonin rises and your body starts preparing for deep sleep right on schedule.`);
   } else if (bedtime === '10–11 pm') {
     improvements.push(`Sleeping between 10–11 PM is a solid window. Your growth hormone activates and tissue repair begins around 10 PM, so you're giving your body the recovery time it needs.`);
   } else if (bedtime === '11 pm–midnight') {
-    improvements.push(`Going to bed between 11 PM–midnight means you may be missing the liver detox and energy restoration phase that peaks around 11 PM. Try shifting your bedtime a little earlier when you can.`);
+    improvements.push(`Going to bed between 11 PM–midnight means you may be missing the liver detox and energy restoration phase that peaks around 11 PM. Try shifting your bedtime a little earlier.`);
   } else if (bedtime === 'After midnight') {
     improvements.push(`Going to bed after midnight means your brain misses its key toxin-clearing and memory processing window around 12 AM, and you may be cutting into your deepest recovery sleep at 1–2 AM. Even shifting 30 minutes earlier can help your body catch up.`);
   }
