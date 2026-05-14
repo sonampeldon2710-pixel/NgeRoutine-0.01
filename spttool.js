@@ -810,7 +810,7 @@ function buildLocalFeedback(a, la, sc) {
     areaOfImprovement = `Using your phone ${phone} before bed is likely making your sleep lighter. Cutting that down even by 30 minutes can make a real difference to how rested you feel.`;
   } else if (shortSleep && outcomePoor) {
     track('aasm');
-    areaOfImprovement = `You sleep ${sleep} most nights. Your body needs more time to repair and recharge. Even one extra hour of sleep can noticeably improve your energy and mood.`;
+    areaOfImprovement = `Sleeping less than 7 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
   } else if (overwork && outcomePoor) {
     track('springer');
     areaOfImprovement = `Working ${workhours} a day makes it hard for your body to switch off at night. Try stopping all work at least 1 hour before bed even a short walk helps your body wind down.`;
@@ -825,7 +825,7 @@ function buildLocalFeedback(a, la, sc) {
     areaOfImprovement = `You feel okay now, but ${phone} of phone use before bed is slowly affecting your sleep depth. Moving phone time earlier in the evening is the easiest win.`;
   } else if (longSleep && !feelEnergy) {
     track('springer');
-    areaOfImprovement = `You sleep ${sleep} but still feel low on energy. More hours in bed isn't always the fix — sleep quality matters too. A consistent bedtime and less screen time can help.`;
+    areaOfImprovement = `Sleeping more than 8–9 hours may increase the risk of stroke, poor health, and early death. Maintaining healthy sleep habits supports better physical and mental well-being.`;
   } else {
     track('guardian');
     areaOfImprovement = `Try going to bed and waking up at the same time every day even on weekends. It's one of the simplest habits that makes a real difference.`;
