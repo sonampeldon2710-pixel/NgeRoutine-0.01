@@ -125,11 +125,9 @@ app.use('/api/alarms',    require('./routes/alarms'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.get('/debug', async (req, res) => {
-  const db['https://saypel44.github.io', 'https://saypel44.github.io/NgeRoutineTool/', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
-  credentials: false,
-  optionsSuccessStatus: 200
+  const db = require('./db');
+  const [users]       = await db.execute('SELECT * FROM users');
+  const [habits]      = await db.execute('SELECT * FROM habits');
   const [habit_logs]  = await db.execute('SELECT * FROM habit_logs');
   const [habit_trends]= await db.execute('SELECT * FROM habit_trends');
   const [profiles]    = await db.execute('SELECT * FROM profiles');
