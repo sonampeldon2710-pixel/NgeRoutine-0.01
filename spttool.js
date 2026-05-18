@@ -2489,8 +2489,8 @@ function saveSettings() {
   currentUser = { username: newUsername, name: newName };
   localStorage.setItem('qt_session', JSON.stringify({ username: newUsername }));
 
-  document.getElementById('hdr-avatar').textContent = newName.charAt(0).toUpperCase();
-  document.getElementById('hdr-name').textContent = newName;
+  document.getElementById('hdr-avatar').textContent = newUsername.charAt(0).toUpperCase();
+  document.getElementById('hdr-name').textContent = '';
   document.getElementById('greeting-name').textContent = newName.split(' ')[0];
 
   ok('✅ Changes saved successfully!');
