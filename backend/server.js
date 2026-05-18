@@ -146,7 +146,9 @@ app.get('/debug', async (req, res) => {
 // const { authenticateToken } = require('./middleware/auth');
 // const checkinsRouter = require('./routes/checkins');     // ← ADD
 
-app.use('/api/checkins', checkinsRouter);
+// app.use('/api/checkins', checkinsRouter);
+
+app.use('/api/checkins', require('./routes/checkins'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
