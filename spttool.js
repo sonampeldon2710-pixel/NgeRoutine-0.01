@@ -1321,16 +1321,24 @@ async function logHabit(id) {
   saveUserData();
 
   // Also save to backend
-  
+  const token = localStorage.getItem('qt_token');
   if (token) {
-    fetch(`${API_BASE}/habits/logs`, {
+    fetch(`${API_BASE}/logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token,
         'ngrok-skip-browser-warning': 'true'
       },
-      body: JSON.stringify(entry)
+      body: JSON.stringify({
+        habit_id:   entry.habitId,
+        habit_name: entry.habitName,
+        habit_icon: entry.habitIcon,
+        date:       entry.date,
+        duration:   entry.duration,
+        unit:       entry.unit,
+        note:       entry.note
+      })
     }).catch(e => console.warn('Log sync failed', e));
   }
 
@@ -1459,7 +1467,7 @@ function renderCalendar(){
   const logDates=new Set(ud?ud.logs.map(l=>l.date):[]);
   const futureDates=new Set([...logDates].filter(d=>d>todayStr));
 
-  for(let i=0;i<first;i++){const token = localStorage.getItem('qt_token');
+  for(let i=0;i<first;i++){
     const prev=new Date(calYear,calMonth,-(first-i-1));
     const el=document.createElement('div');
     el.className='cal-day other-month';
@@ -3705,20 +3713,33 @@ function swReset() {
   _swLaps      = [];
   _swCat       = '';
 
-  document.getElementById('sw-display').textContent = '00:00:00';
+  const displayEl = document.getElementById('sw-display');
+  if (displayEl) displayEl.textContent = '00:00:00';
 
   const btn = document.getElementById('sw-start-btn');
-  btn.textContent = '▶ Start';
-  btn.classList.remove('pause'); btn.classList.add('start');
+  if (btn) {
+    btn.textContent = '▶ Start';
+    btn.classList.remove('pause');
+    btn.classList.add('start');
+  }
 
   const stopBtn = document.getElementById('sw-stop-btn');
   if (stopBtn) stopBtn.disabled = true;
-  document.getElementById('sw-reset-btn').disabled = true;
 
-  document.getElementById('sw-log-section').style.display = 'none';
-  document.getElementById('sw-laps').innerHTML = '';
-  document.getElementById('sw-log-msg').textContent = '';
+  const resetBtn = document.getElementById('sw-reset-btn');
+  if (resetBtn) resetBtn.disabled = true;
+
+  const logSection = document.getElementById('sw-log-section');
+  if (logSection) logSection.style.display = 'none';
+
+  const lapsEl = document.getElementById('sw-laps');
+  if (lapsEl) lapsEl.innerHTML = '';
+
+  const logMsg = document.getElementById('sw-log-msg');
+  if (logMsg) logMsg.textContent = '';
+
   document.querySelectorAll('#sw-categories .aa-cat-btn').forEach(b => b.classList.remove('sel'));
+
   const customInput = document.getElementById('sw-custom-activity');
   if (customInput) customInput.value = '';
 }
