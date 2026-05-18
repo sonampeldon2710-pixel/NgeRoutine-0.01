@@ -30,7 +30,7 @@ router.post('/', auth, async (req, res) => {  // 👈 add auth here
     res.json({ success: true });
   } catch(e) {
     console.error('checkin save error:', e);
-    res.status(500).json({ error: 'Failed to save check-in' });
+    res.status(500).json({ error: e.message });
   }
 });
 
