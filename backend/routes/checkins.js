@@ -4,7 +4,8 @@ const db = require('../db');
 
 router.post('/', async (req, res) => {
   try {
-    const { date, answers, lAnswers, score } = req.body;
+    const { answers, lAnswers, score } = req.body;
+    const date = new Date().toISOString().split('T')[0]; // fix: plain date only
     const userId = req.user.userId;
 
     await db.execute(
