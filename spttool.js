@@ -540,6 +540,31 @@ function detectContradictions() {
   return contra;
 }
 
+/* ── SAVE CHECK-IN TO DATABASE ── */
+async function saveCheckInToDB(answersData, lAnswersData, score) {
+  const token = localStorage.getItem('qt_token');
+  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/checkins`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({
+        date: new Date().toISOString(),
+        answers: answersData,
+        lAnswers: lAnswersData,
+        score: score
+      })
+    });
+    if (!res.ok) console.warn('Check-in DB save failed:', res.status);
+  } catch(e) {
+    console.log('DB save failed, kept in localStorage only', e);
+  }
+}
+
 function showResults() {
   document.getElementById('tracker-form').style.display='none';
   const rd=document.getElementById('results');
@@ -555,6 +580,7 @@ function showResults() {
       score:sleepScore()
     });
     saveUserData();
+    saveCheckInToDB(answers, lAnswers, sleepScore()); // ← saves to Railway DB
   }
 
   const sc=sleepScore();
