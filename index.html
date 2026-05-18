@@ -233,14 +233,18 @@
         ctx.fill();
       }
 
-      // Line
+      // Line — spanGaps: skip nulls but keep line connected to next real point
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
+      const spanGaps = ds.spanGaps !== false; // default true
       let lineStarted = false;
       pts.forEach(p => {
-        if (!p) { lineStarted = false; return; }
+        if (!p) {
+          if (!spanGaps) lineStarted = false; // only break line if spanGaps disabled
+          return;
+        }
         if (!lineStarted) { ctx.moveTo(p.x, p.y); lineStarted = true; } else { ctx.lineTo(p.x, p.y); }
       });
       ctx.stroke();
