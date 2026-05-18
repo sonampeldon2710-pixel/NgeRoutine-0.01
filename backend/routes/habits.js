@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const auth   = require('../middleware/auth');
+const { authenticateToken: auth } = require('../middleware/auth');
 const db     = require('../db');
 
 async function getProfileId(userId) {

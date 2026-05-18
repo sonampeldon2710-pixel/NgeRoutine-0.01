@@ -5,7 +5,7 @@ const db = require('../db');
 router.post('/', async (req, res) => {
   try {
     const { date, answers, lAnswers, score } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     await db.execute(
       `INSERT INTO checkin_history (user_id, date, answers, l_answers, score)
