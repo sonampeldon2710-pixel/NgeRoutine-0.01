@@ -399,10 +399,10 @@
     </div>
 
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('check-in')">Check-In</button>
-      <button class="nav-tab" onclick="showTab('tracker')">⏰ Tracker</button>
-      <button class="nav-tab" onclick="showTab('history')">🗓️ History</button>
-      <button class="nav-tab" onclick="showTab('trends')">  📊Trends</button>
+      <button class="nav-tab active" data-icon="✅" onclick="showTab('check-in')" title="Check-In"><span>Check-In</span></button>
+      <button class="nav-tab" data-icon="⏰" onclick="showTab('tracker')" title="Tracker"><span>Tracker</span></button>
+      <button class="nav-tab" data-icon="🗓️" onclick="showTab('history')" title="History"><span>History</span></button>
+      <button class="nav-tab" data-icon="📊" onclick="showTab('trends')" title="Trends"><span>Trends</span></button>
     </div>
     
     <div class="user-pill" onclick="openSettings()" title="Settings">
@@ -809,7 +809,7 @@
     <div class="settings-avatar-row">
       <div class="settings-avatar" id="st-avatar"></div>
       <div class="settings-avatar-info">
-        <div class="settings-avatar-name" id="st-display-name"></div>
+        <div class="settings-avatar-name" id="st-display-name">Account</div>
         <div class="settings-avatar-user" id="st-display-user"></div>
       </div>
     </div>

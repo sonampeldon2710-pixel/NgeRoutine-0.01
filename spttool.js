@@ -182,8 +182,8 @@ function launchApp(user) {
   localStorage.setItem('qt_session', JSON.stringify({ username: user.username }));
   const firstName = user.name.split(' ')[0];
   document.getElementById('greeting-name').textContent = firstName;
-  document.getElementById('hdr-avatar').textContent = user.name.charAt(0).toUpperCase();
-  document.getElementById('hdr-name').textContent = user.name;
+  document.getElementById('hdr-avatar').textContent = user.username.charAt(0).toUpperCase();
+  document.getElementById('hdr-name').textContent = '';
   document.getElementById('auth-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
   buildHabitCards();
@@ -217,7 +217,7 @@ function openSettings() {
   const users = _loadUsers();
   const u = users[currentUser.username] || {};
   document.getElementById('st-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
-  document.getElementById('st-display-name').textContent = currentUser.name;
+  document.getElementById('st-display-name').textContent = 'Account';
   document.getElementById('st-display-user').textContent = '#' + currentUser.username;
   document.getElementById('st-name').value = currentUser.name;
   document.getElementById('st-userid').value = currentUser.username;
@@ -279,11 +279,11 @@ function saveSettings() {
   localStorage.setItem('qt_session', JSON.stringify({ username: newUserId }));
 
   const firstName = newName.split(' ')[0];
-  document.getElementById('hdr-avatar').textContent      = newName.charAt(0).toUpperCase();
-  document.getElementById('hdr-name').textContent        = newName;
+  document.getElementById('hdr-avatar').textContent      = newUserId.charAt(0).toUpperCase();
+  document.getElementById('hdr-name').textContent        = '';
   document.getElementById('greeting-name').textContent   = firstName;
   document.getElementById('st-avatar').textContent       = newName.charAt(0).toUpperCase();
-  document.getElementById('st-display-name').textContent = newName;
+  document.getElementById('st-display-name').textContent = 'Account';
   document.getElementById('st-display-user').textContent = '#' + newUserId;
   document.getElementById('st-userid').value             = newUserId;
 
