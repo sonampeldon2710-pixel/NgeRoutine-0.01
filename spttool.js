@@ -2095,10 +2095,21 @@ async function renderTrends(){
     return;
   }
 
-  /* ── 2. Union of all dates, sorted ── */
+  /* ── 2. Union of all dates, sorted — fill every calendar day in range ── */
   const allDatesSet=new Set();
   activityKeys.forEach(k=>Object.keys(byActivity[k].byDate).forEach(d=>allDatesSet.add(d)));
-  const allDates=[...allDatesSet].sort();
+  const sparseList=[...allDatesSet].sort();
+  /* Expand to every day between first and last logged date so trendlines
+     are continuous even when an activity has no record for a given day. */
+  const allDates=[];
+  if(sparseList.length>0){
+    const cur=new Date(sparseList[0]+'T12:00');
+    const last=new Date(sparseList[sparseList.length-1]+'T12:00');
+    while(cur<=last){
+      allDates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate()+1);
+    }
+  }
   const dateLabels=allDates.map(d=>new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}));
 
   /* ── 3. Build all datasets ── */
