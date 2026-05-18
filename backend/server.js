@@ -142,7 +142,7 @@ app.get('/debug', async (req, res) => {
   res.json({ users, habits, habit_logs, habit_trends, profiles });
 });
 
-const { authenticateToken } = require('./middleware');  // ← ADD (import auth)
+const { authenticateToken } = require('./middleware/auth');
 const checkinsRouter = require('./routes/checkins');     // ← ADD
 
 app.use('/api/checkins', authenticateToken, checkinsRouter); // ← ADD
