@@ -131,6 +131,7 @@ app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/alarms',    require('./routes/alarms'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
+app.use('/api/checkins',  require('./routes/checkins')); 
 
 app.get('/debug', async (req, res) => {
   const db = require('./db');
@@ -142,10 +143,10 @@ app.get('/debug', async (req, res) => {
   res.json({ users, habits, habit_logs, habit_trends, profiles });
 });
 
-const { authenticateToken } = require('./middleware/auth');
-const checkinsRouter = require('./routes/checkins');     // ← ADD
+// const { authenticateToken } = require('./middleware/auth');
+// const checkinsRouter = require('./routes/checkins');     // ← ADD
 
-app.use('/api/checkins', authenticateToken, checkinsRouter); // ← ADD
+app.use('/api/checkins', checkinsRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -15,7 +15,7 @@ function auth(req, res, next) {
   }
 }
 
-router.post('/', auth, async (req, res) => {  // 👈 add auth here
+router.post('/', auth, async (req, res) => { // ← applies auth AGAIN
   try {
     const { answers, lAnswers, score } = req.body;
     const date = new Date().toISOString().split('T')[0];
