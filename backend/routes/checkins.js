@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { authenticateToken } = require('../middleware');
 
 router.post('/', async (req, res) => {
   try {
     const { date, answers, lAnswers, score } = req.body;
     const userId = req.user.id;
 
-    await db.query(
-      `INSERT INTO checkins (user_id, date, answers, lanswers, score)
-       VALUES ($1, $2, $3, $4, $5)`,
+    await db.execute(
+      `INSERT INTO checkin_history (user_id, date, answers, l_answers, score)
+       VALUES (?, ?, ?, ?, ?)`,
       [userId, date, JSON.stringify(answers), JSON.stringify(lAnswers), score]
     );
 
