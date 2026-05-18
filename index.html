@@ -822,10 +822,13 @@
         <input type="text" id="st-name" class="settings-input" placeholder="Your full name" autocomplete="name">
       </div>
 
-      <div class="settings-field">
-        <label>User ID <span class="settings-field-hint">(used to sign in)</span></label>
-        <input type="text" id="st-userid" class="settings-input" placeholder="Your user ID" autocomplete="username">
-      </div>
+        <div class="settings-field">
+          <label>User ID <span class="settings-field-hint">(fixed, used to sign in)</span></label>
+          <div class="pw-wrap">
+            <input type="text" id="st-userid" class="settings-input settings-input-pass" placeholder="—" autocomplete="off" readonly>
+            <button type="button" class="pw-toggle st-copy-btn" onclick="stCopyPassword()" tabindex="-1" title="Copy">📋</button>
+          </div>
+        </div>
 
       <div class="settings-divider"></div>
 
@@ -837,6 +840,9 @@
         </div>
       </div>
 
+    </div>
+    <div style="padding: 0 20px 12px">
+      <button class="auth-btn" onclick="saveSettings()">Save changes</button>
     </div>
 
     <div id="st-msg" class="auth-msg" style="margin:0 20px 4px"></div>

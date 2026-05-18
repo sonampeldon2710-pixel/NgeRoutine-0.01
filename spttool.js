@@ -242,54 +242,49 @@ function stCopyPassword() {
   }).catch(() => {});
 }
 function saveSettings() {
-  const newName   = document.getElementById('st-name').value.trim();
-  const newUserId = document.getElementById('st-userid').value.trim().toLowerCase();
-  const msg       = document.getElementById('st-msg');
+  const newName = document.getElementById('st-name').value.trim();
+  const msg     = document.getElementById('st-msg');
 
-  if (!newName)   { msg.textContent = 'Name cannot be empty.'; msg.className = 'auth-msg err'; return; }
-  if (!newUserId) { msg.textContent = 'User ID cannot be empty.'; msg.className = 'auth-msg err'; return; }
-  if (newUserId.length < 3) { msg.textContent = 'User ID must be at least 3 characters.'; msg.className = 'auth-msg err'; return; }
-  if (!/^[a-z0-9_]+$/.test(newUserId)) { msg.textContent = 'User ID: letters, numbers and underscores only.'; msg.className = 'auth-msg err'; return; }
-
-  const users = _loadUsers();
-  const oldId = currentUser.username;
-  const u = users[oldId];
-  if (!u) { msg.textContent = 'Session error. Please sign in again.'; msg.className = 'auth-msg err'; return; }
-
-  if (newUserId !== oldId && users[newUserId]) {
-    msg.textContent = 'That User ID is already taken.'; msg.className = 'auth-msg err'; return;
+  if (!newName) { 
+    msg.textContent = 'Name cannot be empty.'; 
+    msg.className = 'auth-msg err'; 
+    return; 
   }
 
-  u.name = newName;
-
-  if (newUserId !== oldId) {
-    users[newUserId] = u;
-    delete users[oldId];
-    const dataRaw = localStorage.getItem('qt_data_' + oldId);
-    if (dataRaw) {
-      localStorage.setItem('qt_data_' + newUserId, dataRaw);
-      localStorage.removeItem('qt_data_' + oldId);
+  const token = localStorage.getItem('qt_token');
+  fetch(`${API_BASE}/auth/update`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ full_name: newName })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) {
+      msg.textContent = data.error; 
+      msg.className = 'auth-msg err';
+      return;
     }
-  }
-
-  _saveUsers(users);
-
-  currentUser.name     = newName;
-  currentUser.username = newUserId;
-  localStorage.setItem('qt_session', JSON.stringify({ username: newUserId }));
-
-  const firstName = newName.split(' ')[0];
-  document.getElementById('hdr-avatar').textContent      = newUserId.charAt(0).toUpperCase();
-  document.getElementById('hdr-name').textContent        = '';
-  document.getElementById('greeting-name').textContent   = firstName;
-  document.getElementById('st-avatar').textContent       = newName.charAt(0).toUpperCase();
-  document.getElementById('st-display-name').textContent = 'Account';
-  document.getElementById('st-display-user').textContent = '#' + newUserId;
-  document.getElementById('st-userid').value             = newUserId;
-
-  msg.textContent = '✓ Changes saved!';
-  msg.className   = 'auth-msg ok';
-  setTimeout(() => { msg.className = 'auth-msg'; msg.textContent = ''; }, 3000);
+    currentUser.name = newName;
+    const firstName = newName.split(' ')[0];
+    document.getElementById('greeting-name').textContent = firstName;
+    document.getElementById('st-avatar').textContent = newName.charAt(0).toUpperCase();
+    document.getElementById('hdr-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+    const users = _loadUsers();
+    if (users[currentUser.username]) {
+      users[currentUser.username].name = newName;
+      _saveUsers(users);
+    }
+    msg.textContent = '✓ Name updated!';
+    msg.className = 'auth-msg ok';
+    setTimeout(() => { msg.className = 'auth-msg'; msg.textContent = ''; }, 3000);
+  })
+  .catch(() => {
+    msg.textContent = 'Network error. Please try again.';
+    msg.className = 'auth-msg err';
+  });
 }
 
 /* ── Forgot Password ── */
@@ -2418,110 +2413,6 @@ function buildInsight(logs,checkIns){
 /* ═══════════════════════════════════════
    SETTINGS
 ═══════════════════════════════════════ */
-function renderSettings() {
-  if (!currentUser) return;
-  const users = _loadUsers();
-  const u = users[currentUser.username];
-  if (!u) return;
-
-  document.getElementById('settings-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
-  document.getElementById('settings-name-display').textContent = currentUser.name;
-  document.getElementById('settings-user-display').textContent = '@' + currentUser.username;
-  document.getElementById('set-name').value = u.name;
-  document.getElementById('set-username').value = currentUser.username;
-  document.getElementById('set-pass').value = '';
-  document.getElementById('set-pass2').value = '';
-  document.getElementById('set-current-pass').value = '';
-  document.getElementById('settings-msg').className = 'auth-msg';
-  document.getElementById('settings-msg').textContent = '';
-
-  const ud = getUserData();
-  const logCount = ud ? ud.logs.length : 0;
-  const checkCount = ud ? ud.checkInHistory.length : 0;
-  const joined = u.joinedAt ? new Date(u.joinedAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'Unknown';
-  const lastChanged = u.lastChanged ? new Date(u.lastChanged).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'Never';
-
-  document.getElementById('settings-record').innerHTML = `
-    <div style="display:grid;gap:8px">
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Full name</span><span style="color:var(--text);font-weight:500">${u.name}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Username</span><span style="color:var(--text);font-weight:500">@${currentUser.username}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Password</span><span style="color:var(--text);font-weight:500">••••••</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Account created</span><span style="color:var(--text);font-weight:500">${joined}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Last profile update</span><span style="color:var(--text);font-weight:500">${lastChanged}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--border)">
-        <span style="color:var(--hint)">Total logs</span><span style="color:var(--green-dk);font-weight:600">${logCount}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0">
-        <span style="color:var(--hint)">Check-ins completed</span><span style="color:var(--green-dk);font-weight:600">${checkCount}</span>
-      </div>
-    </div>`;
-}
-
-function saveSettings() {
-  const newName     = document.getElementById('set-name').value.trim();
-  const newUsername = document.getElementById('set-username').value.trim().toLowerCase();
-  const newPass     = document.getElementById('set-pass').value;
-  const newPass2    = document.getElementById('set-pass2').value;
-  const currentPass = document.getElementById('set-current-pass').value;
-
-  const msgEl = document.getElementById('settings-msg');
-  const err = (t) => { msgEl.textContent = t; msgEl.className = 'auth-msg err'; };
-  const ok  = (t) => { msgEl.textContent = t; msgEl.className = 'auth-msg ok'; };
-
-  if (!newName || !newUsername) return err('Name and username cannot be empty.');
-  if (newUsername.length < 3) return err('Username must be at least 3 characters.');
-  if (!currentPass) return err('Please enter your current password to save changes.');
-
-  const users = _loadUsers();
-  const u = users[currentUser.username];
-  if (!u || u.pass !== currentPass) return err('Current password is incorrect.');
-
-  if (newUsername !== currentUser.username && users[newUsername]) return err('That username is already taken.');
-
-  if (newPass || newPass2) {
-    if (newPass.length < 6) return err('New password must be at least 6 characters.');
-    if (newPass !== newPass2) return err('New passwords do not match.');
-  }
-
-  const finalPass = newPass || u.pass;
-
-  if (newUsername !== currentUser.username) {
-    const existingData = localStorage.getItem('qt_data_' + currentUser.username);
-    if (existingData) {
-      localStorage.setItem('qt_data_' + newUsername, existingData);
-      localStorage.removeItem('qt_data_' + currentUser.username);
-    }
-    delete users[currentUser.username];
-  }
-
-  users[newUsername] = {
-    name: newName,
-    pass: finalPass,
-    joinedAt: u.joinedAt || new Date().toISOString(),
-    lastChanged: new Date().toISOString()
-  };
-  _saveUsers(users);
-
-  currentUser = { username: newUsername, name: newName };
-  localStorage.setItem('qt_session', JSON.stringify({ username: newUsername }));
-
-  document.getElementById('hdr-avatar').textContent = newUsername.charAt(0).toUpperCase();
-  document.getElementById('hdr-name').textContent = '';
-  document.getElementById('greeting-name').textContent = newName.split(' ')[0];
-
-  ok('✅ Changes saved successfully!');
-  renderSettings();
-}
 
 function deleteAccount() {
   if (!currentUser) return;

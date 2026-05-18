@@ -68,20 +68,16 @@ router.post('/login', async (req, res) => {
 });
 
 // UPDATE PROFILE (The one that was 403-ing)
+// should look like this now
 router.put('/update', auth, async (req, res) => {
-  const { full_name: name, username, currentPassword, newPassword } = req.body;
+  const { full_name: name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required.' });
   try {
-    const [rows] = await db.execute('SELECT * FROM users WHERE id = ?', [req.userId]);
-    const match = await bcrypt.compare(currentPassword, rows[0].password_hash);
-    if (!match) return res.status(401).json({ error: 'Current password incorrect.' });
-
-    const finalHash = newPassword ? await bcrypt.hash(newPassword, 10) : rows[0].password_hash;
-    
     await db.execute(
-      'UPDATE users SET full_name=?, username=?, password_hash=?, last_changed=NOW() WHERE id=?',
-      [name, username, finalHash, req.userId]
+      'UPDATE users SET full_name=? WHERE id=?',
+      [name, req.userId]
     );
-    res.json({ message: 'Profile updated.' });
+    res.json({ message: 'Name updated.', name });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
