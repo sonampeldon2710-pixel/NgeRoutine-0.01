@@ -2688,28 +2688,64 @@ function clearLogsByDate(dateStr) {
 function exportCSV(){
   const ud=getUserData();
   if(!ud||!ud.logs.length){alert('No logs to export yet.');return;}
-  const rows=[['Date','Habit','Duration','Unit','Start','End','Note']];
-  ud.logs.forEach(l=>rows.push([normalizeDateValue(l.date),l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
+  
+  // Group by date + habit
+  const byDayHabit={};
+  ud.logs.forEach(l=>{
+    const key=normalizeDateValue(l.date)+'_'+l.habitName;
+    if(!byDayHabit[key]){
+      byDayHabit[key]={date:normalizeDateValue(l.date),name:l.habitName,totalHrs:0,sessions:0};
+    }
+    const hrs=l.unit==='mins'?l.duration/60:Number(l.duration)||0;
+    byDayHabit[key].totalHrs+=hrs;
+    byDayHabit[key].sessions+=1;
+  });
+
+  const rows=[['Date','Habit','Total Hours','Total Minutes','Sessions']];
+  Object.values(byDayHabit)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .forEach(h=>{
+      rows.push([h.date, h.name, h.totalHrs.toFixed(2), Math.round(h.totalHrs*60), h.sessions]);
+    });
+
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='quick-tracker-logs.csv';
+  a.download='quick-tracker-daily.csv';
   a.click();
 }
 
 function exportExcel(){
   const ud=getUserData();
   if(!ud||!ud.logs.length){alert('No logs to export yet.');return;}
-  const rows=[['Date','Habit','Duration','Unit','Start Time','End Time','Note']];
-  ud.logs.forEach(l=>rows.push([normalizeDateValue(l.date),l.habitName,l.duration,l.unit,l.startTime||'',l.endTime||'',l.note||'']));
+
+  // Group by date + habit
+  const byDayHabit={};
+  ud.logs.forEach(l=>{
+    const key=normalizeDateValue(l.date)+'_'+l.habitName;
+    if(!byDayHabit[key]){
+      byDayHabit[key]={date:normalizeDateValue(l.date),name:l.habitName,totalHrs:0,sessions:0};
+    }
+    const hrs=l.unit==='mins'?l.duration/60:Number(l.duration)||0;
+    byDayHabit[key].totalHrs+=hrs;
+    byDayHabit[key].sessions+=1;
+  });
+
+  const rows=[['Date','Habit','Total Hours','Total Minutes','Sessions']];
+  Object.values(byDayHabit)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .forEach(h=>{
+      rows.push([h.date, h.name, h.totalHrs.toFixed(2), Math.round(h.totalHrs*60), h.sessions]);
+    });
+
   const header=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>td{font-family:Calibri,sans-serif;font-size:11pt;padding:4px 8px;border:1px solid #ccc}th{background:#1D9E75;color:#fff;font-weight:600}</style></head><body><table>`;
   const htmlRows=rows.map((r,i)=>`<tr>${r.map(c=>`<${i===0?'th':'td'}>${c}</${i===0?'th':'td'}>`).join('')}</tr>`).join('');
   const html=header+htmlRows+'</table></body></html>';
   const blob=new Blob([html],{type:'application/vnd.ms-excel'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='quick-tracker-logs.xls';
+  a.download='quick-tracker-daily.xls';
   a.click();
 }
 /* ═══════════════════════════════════════
