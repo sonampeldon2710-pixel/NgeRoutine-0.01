@@ -1692,3 +1692,93 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
   .tab-pane { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   .app-header { padding-top: max(14px, env(safe-area-inset-top)); }
 }
+/* ── DOT DETAIL POPUP ── */
+.ddp-box {
+  background: var(--surf);
+  border-radius: 18px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  animation: cardUp .22s cubic-bezier(.22,1,.36,1) both;
+}
+.ddp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+  border-bottom: .5px solid var(--border);
+  background: var(--surf2);
+}
+.ddp-date {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.ddp-subtitle {
+  font-size: 11px;
+  color: var(--hint);
+  margin-top: 3px;
+  letter-spacing: .04em;
+}
+.ddp-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--hint);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background .15s;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+.ddp-close:hover { background: var(--surf3); }
+.ddp-rows {
+  padding: 10px 18px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.ddp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: .5px solid var(--border);
+  transition: opacity .2s;
+}
+.ddp-row:last-child { border-bottom: none; }
+.ddp-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ddp-habit {
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  font-weight: 500;
+}
+.ddp-val {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ddp-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px 14px;
+  border-top: 1.5px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surf2);
+}

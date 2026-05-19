@@ -2332,10 +2332,11 @@ async function renderTrends(){
         },
         onClick:function(dot){
           if(!dot||!dot.ds)return;
-          const k=dot.ds._key;
-          if(_trendSelectedKeys.has(k)&&_trendSelectedKeys.size===1) _trendSelectedKeys=new Set(activityKeys);
-          else { _trendSelectedKeys=new Set([k]); }
-          buildChips(); refreshChart(); buildBadges();
+          // Show full-date detail popup for ALL habits at this date index
+          const filteredDates = getFilteredDates();
+          const dateISO = filteredDates[dot.i];
+          if(!dateISO) return;
+          _showDotDetailPopup(dateISO, activityKeys, byActivity, TREND_PALETTE);
         },
         scales:{
           x:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#a09c96',maxRotation:45} },
@@ -2444,6 +2445,72 @@ function buildInsight(logs,checkIns){
     :`Your check-in score is ${lastScore}/50 with an average logged sleep of ${sleepAvg.toFixed(1)} hrs. Increasing sleep consistency (not just duration) is likely to move this score higher.`;
   card.innerHTML=`<div class="chart-title">💡 Key insight</div><div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.7">${insight}</div>`;
   return card;
+}
+
+/* ═══════════════════════════════════════
+   DOT DETAIL POPUP — Trends chart click
+═══════════════════════════════════════ */
+function _showDotDetailPopup(dateISO, activityKeys, byActivity, palette) {
+  // Format date label
+  const dateObj = new Date(dateISO + 'T12:00');
+  const isToday = dateISO === new Date().toLocaleDateString('en-CA');
+  const isYesterday = dateISO === new Date(Date.now()-86400000).toLocaleDateString('en-CA');
+  const dateLabel = isToday ? 'Today'
+    : isYesterday ? 'Yesterday'
+    : dateObj.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  // Gather all habits that have data on this date
+  const rows = activityKeys.map((key, idx) => {
+    const act = byActivity[key];
+    const hrs = act.byDate[dateISO] || 0;
+    const color = palette[idx % palette.length];
+    return { key, name: act.name, icon: act.icon, hrs, color };
+  });
+
+  const hasAny = rows.some(r => r.hrs > 0);
+
+  // Build rows HTML
+  let rowsHTML = '';
+  rows.forEach(r => {
+    const totalMins = Math.round(r.hrs * 60);
+    const display = totalMins === 0 ? '—'
+      : totalMins < 60 ? totalMins + ' min'
+      : (Math.floor(totalMins/60)) + 'h' + (totalMins%60 > 0 ? ' ' + (totalMins%60) + 'm' : '');
+    const opacity = r.hrs > 0 ? '1' : '0.35';
+    rowsHTML += `
+      <div class="ddp-row" style="opacity:${opacity}">
+        <div class="ddp-dot" style="background:${r.color}"></div>
+        <span class="ddp-habit">${r.icon} ${r.name}</span>
+        <span class="ddp-val" style="color:${r.hrs>0?r.color:'var(--hint)'}">${display}</span>
+      </div>`;
+  });
+
+  if (!hasAny) {
+    rowsHTML = `<div style="text-align:center;padding:20px 0;color:var(--hint);font-size:13px">Nothing logged on this day.</div>`;
+  }
+
+  // Total
+  const totalHrs = rows.reduce((s,r)=>s+r.hrs,0);
+  const totalMins = Math.round(totalHrs*60);
+  const totalDisplay = totalMins === 0 ? '0 min'
+    : totalMins < 60 ? totalMins + ' min'
+    : Math.floor(totalMins/60) + 'h' + (totalMins%60>0?' '+totalMins%60+'m':'');
+
+  const popup = document.getElementById('dot-detail-popup');
+  if (!popup) return;
+  popup.innerHTML = `
+    <div class="ddp-box">
+      <div class="ddp-header">
+        <div>
+          <div class="ddp-date">${dateLabel}</div>
+          <div class="ddp-subtitle">${dateISO}</div>
+        </div>
+        <button class="ddp-close" onclick="document.getElementById('dot-detail-popup').style.display='none'">✕</button>
+      </div>
+      <div class="ddp-rows">${rowsHTML}</div>
+      ${hasAny ? `<div class="ddp-total"><span>Total logged</span><span>${totalDisplay}</span></div>` : ''}
+    </div>`;
+  popup.style.display = 'flex';
 }
 
 /* ═══════════════════════════════════════
