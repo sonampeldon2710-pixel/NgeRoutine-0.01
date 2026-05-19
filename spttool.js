@@ -1846,6 +1846,11 @@ const TREND_PALETTE=[
 /* Track which activity is currently focused (null = show all) */
 let _trendFocusKey = null;
 
+/* Multi-select state for Tableau-style filtering */
+let _trendSelectedKeys = null; // null = all selected
+let _trendDateFrom = null;
+let _trendDateTo = null;
+
 /* ═══════════════════════════════════════
    TODAY'S SNAPSHOT — interactive bar chart
 ═══════════════════════════════════════ */
@@ -2028,6 +2033,8 @@ function buildTodaySnapshot(logs, byActivity, allDates, palette, activityKeys) {
   return card;
 }
 
+
+
 async function renderTrends(){
   const content=document.getElementById('trends-content');
   if(!content)return;
@@ -2041,7 +2048,6 @@ async function renderTrends(){
       });
       const dbLogs = await res.json();
       if (Array.isArray(dbLogs) && dbLogs.length) {
-        // Merge DB logs into local format
         const ud = getUserData();
         if (ud) {
           dbLogs.forEach(l => {
@@ -2072,19 +2078,15 @@ async function renderTrends(){
     return;
   }
 
-
-
   Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}});
   chartInstances={};
   content.innerHTML='';
 
-  /* ── 1. Build per-activity daily aggregates (all in hrs) ── */
+  /* ── 1. Build per-activity daily aggregates ── */
   const byActivity={};
   ud.logs.forEach(l=>{
     const key=l.habitId||l.habitName.toLowerCase().replace(/\s+/g,'-');
-    if(!byActivity[key]){
-      byActivity[key]={name:l.habitName,icon:l.habitIcon||'📋',byDate:{}};
-    }
+    if(!byActivity[key]) byActivity[key]={name:l.habitName,icon:l.habitIcon||'📋',byDate:{}};
     const durationHrs = l.unit==='mins' ? l.duration/60 : l.duration;
     byActivity[key].byDate[l.date]=(byActivity[key].byDate[l.date]||0)+durationHrs;
   });
@@ -2095,36 +2097,34 @@ async function renderTrends(){
     return;
   }
 
-  /* ── 2. Union of all dates, sorted — fill every calendar day in range ── */
+  /* ── 2. Full date range ── */
   const allDatesSet=new Set();
   activityKeys.forEach(k=>Object.keys(byActivity[k].byDate).forEach(d=>allDatesSet.add(d)));
   const sparseList=[...allDatesSet].sort();
-  /* Expand to every day between first and last logged date so trendlines
-     are continuous even when an activity has no record for a given day. */
-  const allDates=[];
+  const fullDates=[];
   if(sparseList.length>0){
     const cur=new Date(sparseList[0]+'T12:00');
     const last=new Date(sparseList[sparseList.length-1]+'T12:00');
-    while(cur<=last){
-      allDates.push(cur.toISOString().split('T')[0]);
-      cur.setDate(cur.getDate()+1);
-    }
+    while(cur<=last){ fullDates.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
   }
-  const dateLabels=allDates.map(d=>new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+
+  // Init date range state to full range
+  if(!_trendDateFrom) _trendDateFrom = fullDates[0]||'';
+  if(!_trendDateTo)   _trendDateTo   = fullDates[fullDates.length-1]||'';
+  if(!_trendSelectedKeys) _trendSelectedKeys = new Set(activityKeys);
 
   /* ── 3. Build all datasets ── */
   const allDatasets=activityKeys.map((key,idx)=>{
     const act=byActivity[key];
     const color=TREND_PALETTE[idx%TREND_PALETTE.length];
-    const data=allDates.map(d=>act.byDate[d]!=null?+act.byDate[d].toFixed(2):null);
     return{
       label:`${act.icon} ${act.name}`,
-      data,
+      data: fullDates.map(d=>act.byDate[d]!=null?+act.byDate[d].toFixed(2):null),
       borderColor:color,
       backgroundColor:color+'22',
       pointBackgroundColor:color,
-      pointRadius:5,
-      pointHoverRadius:8,
+      pointRadius:4,
+      pointHoverRadius:7,
       tension:.35,
       fill:false,
       spanGaps:true,
@@ -2132,221 +2132,238 @@ async function renderTrends(){
     };
   });
 
-  /* ── 4. Render chart card ── */
+  /* ── TODAY'S SNAPSHOT ── */
+  const snapshotCard = buildTodaySnapshot(ud.logs, byActivity, fullDates, TREND_PALETTE, activityKeys);
+  content.appendChild(snapshotCard);
+
+  /* ── 4. Tableau-style filter bar card ── */
+  const filterCard = document.createElement('div');
+  filterCard.className = 'chart-card';
+  filterCard.style.cssText = 'padding:14px 16px';
+  filterCard.innerHTML = `
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:500;color:var(--text)">📅 Date range</span>
+      <input type="date" id="trend-date-from" value="${_trendDateFrom}" style="padding:5px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:12px">
+      <span style="font-size:12px;color:var(--muted)">to</span>
+      <input type="date" id="trend-date-to" value="${_trendDateTo}" style="padding:5px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:12px">
+      <div style="display:flex;gap:6px;margin-left:4px">
+        <button type="button" class="trend-quick-btn" data-days="7" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">7d</button>
+        <button type="button" class="trend-quick-btn" data-days="30" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">30d</button>
+        <button type="button" class="trend-quick-btn" data-days="90" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">90d</button>
+        <button type="button" class="trend-quick-btn" data-days="0" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">All</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:13px;font-weight:500;color:var(--text)">🏷 Habits</span>
+      <button type="button" id="trend-select-all" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">Select all</button>
+      <button type="button" id="trend-clear-all" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">Clear</button>
+      <div id="trend-habit-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>`;
+  content.appendChild(filterCard);
+
+  /* ── 5. Chart card ── */
   const card=document.createElement('div');
   card.className='chart-card';
   card.style.cssText='padding:20px 16px 16px';
-
-  /* Build trend badges — clickable */
-  function buildBadgesHTML(focusKey){
-    return activityKeys.map((key,i)=>{
-      const act=byActivity[key];
-      const vals=allDates.map(d=>act.byDate[d]||0).filter(v=>v>0);
-      const trend=calcTrend(vals);
-      const color=TREND_PALETTE[i%TREND_PALETTE.length];
-      const arrow=trend.dir==='up'?'↑':trend.dir==='down'?'↓':'→';
-      const label=trend.dir==='up'?'up':trend.dir==='down'?'down':'stable';
-      const isActive = !focusKey || focusKey===key;
-      const ring = focusKey===key ? `box-shadow:0 0 0 2px ${color};` : '';
-      const opacity = isActive ? '1' : '0.35';
-      return `<div class="trend-act-badge" data-key="${key}" style="border-left:3px solid ${color};cursor:pointer;opacity:${opacity};transition:opacity .2s,box-shadow .2s;${ring}">
-        <span class="trend-act-name">${act.icon} ${act.name}</span>
-        <span class="trend-act-arrow ${trend.dir}">${arrow} ${label}</span>
-        <span class="trend-act-avg">avg ${trend.avg.toFixed(2)} hrs/day</span>
-      </div>`;
-    }).join('');
-  }
-
-  /* Focus label shown below title */
-  function focusLabel(focusKey){
-    if(!focusKey) return '';
-    const idx = activityKeys.indexOf(focusKey);
-    const act = byActivity[focusKey];
-    const color = TREND_PALETTE[idx%TREND_PALETTE.length];
-    return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;background:${color}18;color:${color};border:1px solid ${color}44;border-radius:10px;padding:2px 9px;margin-left:8px;font-weight:600">${act.icon} ${act.name} only · <span style="cursor:pointer;font-weight:700" id="trend-clear-focus">✕ show all</span></span>`;
-  }
-
   card.innerHTML=`
-    <div class="chart-title" style="margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">📈 Activity Trends<span id="trend-focus-label">${focusLabel(_trendFocusKey)}</span></div>
-    <div class="chart-sub" style="margin-bottom:14px">Daily hours per activity · hover dots for info · <strong>click an activity</strong> to isolate its trendline</div>
-    <div id="trend-legend-row" style="margin-bottom:14px"></div>
-    <div style="position:relative;width:100%;height:260px;margin-top:12px">
+    <div class="chart-title" style="margin-bottom:4px">📈 Activity Trends</div>
+    <div class="chart-sub" style="margin-bottom:14px" id="trend-range-label">Daily hours · click a habit chip to toggle · drag date range above</div>
+    <div style="position:relative;width:100%;height:280px;margin-top:8px">
       <canvas id="chart-combined-trends" role="img" aria-label="Combined activity trends chart"></canvas>
     </div>
-    <div class="trend-acts-grid" id="trend-acts-grid" style="margin-top:16px">${buildBadgesHTML(_trendFocusKey)}</div>`;
-
-  /* ── 📅 TODAY'S SNAPSHOT — insert before Activity Trends ── */
-  const snapshotCard = buildTodaySnapshot(ud.logs, byActivity, allDates, TREND_PALETTE, activityKeys);
-  content.appendChild(snapshotCard);
-
+    <div class="trend-acts-grid" id="trend-acts-grid" style="margin-top:16px"></div>`;
   content.appendChild(card);
-  
-  /* Build hamburger menu for trend activities */
-  const legendRow = document.getElementById('trend-legend-row');
-  if (legendRow) {
-    const hamburgerContainer = document.createElement('div');
-    hamburgerContainer.style.cssText = 'position:relative;display:inline-block';
-    
-    const hamburgerBtn = document.createElement('button');
-    hamburgerBtn.type = 'button';
-    hamburgerBtn.textContent = '☰ Activities';
-    hamburgerBtn.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);cursor:pointer;font-size:13px;font-weight:500';
-    
-    const dropdown = document.createElement('div');
-    dropdown.id = 'trend-filter-dropdown';
-    dropdown.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:180px;display:none;flex-direction:column';
-    
-    // "All" option
-    const allOption = document.createElement('button');
-    allOption.type = 'button';
-    allOption.textContent = '🗂 All';
-    allOption.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${!_trendFocusKey ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s;border-bottom:1px solid var(--border)`;
-    allOption.onmouseover = () => allOption.style.background = 'var(--green-lt)';
-    allOption.onmouseout = () => allOption.style.background = !_trendFocusKey ? 'var(--green-lt)' : 'transparent';
-    allOption.onclick = () => { applyFocus(null); dropdown.style.display = 'none'; };
-    dropdown.appendChild(allOption);
-    
-    // Build activity options
-    activityKeys.forEach((key, idx) => {
+
+  /* ── 6. Build habit chips ── */
+  function buildChips(){
+    const wrap = document.getElementById('trend-habit-chips');
+    if(!wrap) return;
+    wrap.innerHTML = activityKeys.map((key,i)=>{
       const act = byActivity[key];
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.textContent = act.icon + ' ' + act.name;
-      option.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${_trendFocusKey === key ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s`;
-      option.onmouseover = () => option.style.background = 'var(--green-lt)';
-      option.onmouseout = () => option.style.background = _trendFocusKey === key ? 'var(--green-lt)' : 'transparent';
-      option.onclick = () => { applyFocus(_trendFocusKey === key ? null : key); dropdown.style.display = 'none'; };
-      dropdown.appendChild(option);
-    });
-    
-    hamburgerBtn.onclick = () => {
-      dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
-    };
-    
-    hamburgerContainer.appendChild(hamburgerBtn);
-    hamburgerContainer.appendChild(dropdown);
-    legendRow.appendChild(hamburgerContainer);
-    
-    // Close dropdown when clicking outside
-    setTimeout(() => {
-      const closeDropdown = (e) => {
-        if (!hamburgerContainer.contains(e.target) && dropdown.style.display === 'flex') {
-          dropdown.style.display = 'none';
-        }
-      };
-      document.addEventListener('click', closeDropdown);
-      if (window._trendDropdownListener) document.removeEventListener('click', window._trendDropdownListener);
-      window._trendDropdownListener = closeDropdown;
-    }, 0);
-  }
-
-  /* ── Helper: get datasets filtered by focus ── */
-  function getVisibleDatasets(focusKey){
-    if(!focusKey) return allDatasets;
-    return allDatasets.filter(ds=>ds._key===focusKey);
-  }
-
-  /* ── Apply focus: update chart + UI without full re-render ── */
-  function applyFocus(focusKey){
-    _trendFocusKey = focusKey;
-    const visDs = getVisibleDatasets(focusKey);
-
-    // Update chart data
-    const ch = chartInstances['combined'];
-    if(ch){
-      ch.config.data.datasets = visDs;
-      ch._draw();
-    }
-
-    // Update focus label
-    const lbl = document.getElementById('trend-focus-label');
-    if(lbl){
-      lbl.innerHTML = focusLabel(focusKey);
-      const clearBtn = document.getElementById('trend-clear-focus');
-      if(clearBtn) clearBtn.addEventListener('click', e=>{ e.stopPropagation(); applyFocus(null); });
-    }
-
-    // Update badges
-    const grid = document.getElementById('trend-acts-grid');
-    if(grid) grid.innerHTML = buildBadgesHTML(focusKey);
-
-    // Re-attach badge listeners
-    document.querySelectorAll('#trend-acts-grid .trend-act-badge').forEach(badge=>{
-      badge.addEventListener('click', ()=>{
-        const k = badge.dataset.key;
-        applyFocus(_trendFocusKey===k ? null : k);
+      const color = TREND_PALETTE[i%TREND_PALETTE.length];
+      const on = _trendSelectedKeys.has(key);
+      return `<button type="button" class="trend-chip" data-key="${key}" style="
+        padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;
+        border:1.5px solid ${color};
+        background:${on ? color : 'transparent'};
+        color:${on ? '#fff' : color};
+        transition:all .15s;font-weight:500">${act.icon} ${act.name}</button>`;
+    }).join('');
+    wrap.querySelectorAll('.trend-chip').forEach(chip=>{
+      chip.addEventListener('click',()=>{
+        const k = chip.dataset.key;
+        if(_trendSelectedKeys.has(k)) _trendSelectedKeys.delete(k);
+        else _trendSelectedKeys.add(k);
+        buildChips();
+        refreshChart();
+        buildBadges();
       });
     });
   }
 
-  /* ── 5. Render chart ── */
+  /* ── 7. Get filtered dates and datasets ── */
+  function getFilteredDates(){
+    return fullDates.filter(d=> d >= _trendDateFrom && d <= _trendDateTo);
+  }
+
+  function getFilteredDatasets(){
+    const filtered = getFilteredDates();
+    return allDatasets
+      .filter(ds => _trendSelectedKeys.has(ds._key))
+      .map(ds => ({
+        ...ds,
+        data: filtered.map(d => {
+          const act = byActivity[ds._key];
+          return act.byDate[d]!=null ? +act.byDate[d].toFixed(2) : null;
+        })
+      }));
+  }
+
+  function getFilteredLabels(){
+    const filtered = getFilteredDates();
+    // Smart label density: show fewer labels when range is large
+    const total = filtered.length;
+    return filtered.map((d,i)=>{
+      if(total <= 14) return new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      if(total <= 60) return i%7===0 ? new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+      return i%14===0 ? new Date(d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    });
+  }
+
+  /* ── 8. Refresh chart when filters change ── */
+  function refreshChart(){
+    const ch = chartInstances['combined'];
+    if(!ch) return;
+    const ds = getFilteredDatasets();
+    const labels = getFilteredLabels();
+    ch.config.data.labels = labels;
+    ch.config.data.datasets = ds;
+    ch._resize();
+    ch._draw();
+    // Update range label
+    const lbl = document.getElementById('trend-range-label');
+    if(lbl){
+      const days = getFilteredDates().length;
+      const sel = _trendSelectedKeys.size;
+      lbl.textContent = `${days} days · ${sel} of ${activityKeys.length} habits shown`;
+    }
+  }
+
+  /* ── 9. Build stat badges ── */
+  function buildBadges(){
+    const grid = document.getElementById('trend-acts-grid');
+    if(!grid) return;
+    const filtered = getFilteredDates();
+    grid.innerHTML = activityKeys.map((key,i)=>{
+      const act = byActivity[key];
+      const color = TREND_PALETTE[i%TREND_PALETTE.length];
+      const vals = filtered.map(d=>act.byDate[d]||0).filter(v=>v>0);
+      const trend = calcTrend(vals);
+      const on = _trendSelectedKeys.has(key);
+      const arrow = trend.dir==='up'?'↑':trend.dir==='down'?'↓':'→';
+      const opacity = on ? '1' : '0.3';
+      return `<div class="trend-act-badge" data-key="${key}" style="border-left:3px solid ${color};cursor:pointer;opacity:${opacity};transition:opacity .2s">
+        <span class="trend-act-name">${act.icon} ${act.name}</span>
+        <span class="trend-act-arrow ${trend.dir}">${arrow} ${trend.dir}</span>
+        <span class="trend-act-avg">avg ${trend.avg.toFixed(2)} hrs/day</span>
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('.trend-act-badge').forEach(badge=>{
+      badge.addEventListener('click',()=>{
+        const k = badge.dataset.key;
+        if(_trendSelectedKeys.has(k)) _trendSelectedKeys.delete(k);
+        else _trendSelectedKeys.add(k);
+        buildChips();
+        refreshChart();
+        buildBadges();
+      });
+    });
+  }
+
+  /* ── 10. Wire date inputs ── */
+  setTimeout(()=>{
+    const fromEl = document.getElementById('trend-date-from');
+    const toEl   = document.getElementById('trend-date-to');
+    if(fromEl) fromEl.addEventListener('change',e=>{ _trendDateFrom=e.target.value; refreshChart(); buildBadges(); });
+    if(toEl)   toEl.addEventListener('change',e=>{ _trendDateTo=e.target.value; refreshChart(); buildBadges(); });
+
+    document.querySelectorAll('.trend-quick-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const days = parseInt(btn.dataset.days);
+        const last = fullDates[fullDates.length-1]||new Date().toISOString().split('T')[0];
+        if(days===0){
+          _trendDateFrom = fullDates[0]||last;
+        } else {
+          const d = new Date(last+'T12:00');
+          d.setDate(d.getDate()-(days-1));
+          _trendDateFrom = d.toISOString().split('T')[0];
+        }
+        _trendDateTo = last;
+        if(fromEl) fromEl.value = _trendDateFrom;
+        if(toEl)   toEl.value   = _trendDateTo;
+        refreshChart();
+        buildBadges();
+      });
+    });
+
+    document.getElementById('trend-select-all').addEventListener('click',()=>{
+      _trendSelectedKeys = new Set(activityKeys);
+      buildChips(); refreshChart(); buildBadges();
+    });
+    document.getElementById('trend-clear-all').addEventListener('click',()=>{
+      _trendSelectedKeys = new Set();
+      buildChips(); refreshChart(); buildBadges();
+    });
+  },0);
+
+  /* ── 11. Render chart ── */
   setTimeout(()=>{
     const ctx=document.getElementById('chart-combined-trends');
     if(!ctx)return;
-
-    const visDs = getVisibleDatasets(_trendFocusKey);
-
     chartInstances['combined']=new Chart(ctx,{
       type:'line',
-      data:{labels:dateLabels, datasets: visDs},
+      data:{labels: getFilteredLabels(), datasets: getFilteredDatasets()},
       options:{
         responsive:true,
         maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
-          tooltip:{
-            callbacks:{
-              label:ctx=>{
-                if(ctx.parsed.y===null)return null;
-                return ` ${ctx.dataset.label}: ${ctx.parsed.y} hrs`;
-              }
-            }
-          }
+          tooltip:{callbacks:{label:c=>{ if(c.parsed.y===null)return null; return ` ${c.dataset.label}: ${c.parsed.y} hrs`; }}}
         },
-        onClick: function(dot){
-          // dot = { ds, i, v, label, color }
-          const key = dot.ds._key;
-          applyFocus(_trendFocusKey===key ? null : key);
+        onClick:function(dot){
+          if(!dot||!dot.ds)return;
+          const k=dot.ds._key;
+          if(_trendSelectedKeys.has(k)&&_trendSelectedKeys.size===1) _trendSelectedKeys=new Set(activityKeys);
+          else { _trendSelectedKeys=new Set([k]); }
+          buildChips(); refreshChart(); buildBadges();
         },
         scales:{
-          x:{
-            grid:{color:'rgba(0,0,0,0.04)'},
-            ticks:{font:{size:11},color:'#a09c96',maxRotation:45,minRotation:0}
-          },
-          y:{
-            min:0,
-            grid:{color:'rgba(0,0,0,0.04)'},
-            ticks:{font:{size:11},color:'#a09c96',maxTicksLimit:6,callback:v=>v+' h'}
-          }
+          x:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#a09c96',maxRotation:45} },
+          y:{ min:0, grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#a09c96',maxTicksLimit:6,callback:v=>v+' h'} }
         }
       }
     });
 
-    /* Wire legend chip clicks after chart is ready */
-    /* Wire clear-focus button if focus is already active */
-    const clearBtn = document.getElementById('trend-clear-focus');
-    if(clearBtn) clearBtn.addEventListener('click', e=>{ e.stopPropagation(); applyFocus(null); });
+    buildChips();
+    buildBadges();
+    refreshChart();
 
-    /* Wire snapshot-focus custom event so clicking a bar in Today's Snapshot
-       focuses the corresponding trendline in Activity Trends */
-    if (window._snapshotFocusListener) {
-      document.removeEventListener('snapshot-focus', window._snapshotFocusListener);
-    }
-    window._snapshotFocusListener = (e) => {
-      const k = e.detail && e.detail.key;
-      if (k) applyFocus(_trendFocusKey === k ? null : k);
+    // Wire snapshot-focus event
+    if(window._snapshotFocusListener) document.removeEventListener('snapshot-focus',window._snapshotFocusListener);
+    window._snapshotFocusListener=(e)=>{
+      const k=e.detail&&e.detail.key;
+      if(k){ _trendSelectedKeys=new Set([k]); buildChips(); refreshChart(); buildBadges(); }
     };
-    document.addEventListener('snapshot-focus', window._snapshotFocusListener);
-
+    document.addEventListener('snapshot-focus',window._snapshotFocusListener);
   },50);
 
-  /* ── 6. Sleep score card (if check-ins exist) ── */
+  /* ── 12. Sleep score card ── */
   if(ud.checkInHistory&&ud.checkInHistory.length>0){
     const scoreCard=buildScoreChart(ud.checkInHistory);
     content.appendChild(scoreCard);
   }
 
-  /* ── 7. Insight card ── */
+  /* ── 13. Insight card ── */
   const ins=buildInsight(ud.logs,ud.checkInHistory||[]);
   if(ins)content.appendChild(ins);
 }
