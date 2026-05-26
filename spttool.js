@@ -3507,10 +3507,15 @@ function deleteSchedule(id) {
 /* ── Render ── */
 function renderTrackerSchedules() {
   const ud = getUserData();
-  const schedules = (ud && ud.schedules) ? [...ud.schedules] : [];
+  const allSchedules = (ud && ud.schedules) ? [...ud.schedules] : [];
   const emptyState = document.getElementById('tracker-empty-state');
   const listWrap = document.getElementById('tracker-schedules-wrap');
   const listEl = document.getElementById('tracker-schedule-list');
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Only show today's and future schedules; silently skip past ones
+  const schedules = allSchedules.filter(sc => sc.date >= today);
 
   if (!schedules.length) {
     emptyState.style.display = 'flex';
@@ -3532,16 +3537,12 @@ function renderTrackerSchedules() {
     groups[sc.date].push(sc);
   });
 
-  const today = new Date().toISOString().split('T')[0];
-
   Object.keys(groups).sort().forEach(date => {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'schedule-date-group';
 
     const d = new Date(date + 'T00:00:00');
-    const label = date === today ? 'Today'
-      : date > today ? _formatDateLabel(d)
-      : _formatDateLabel(d) + ' (past)';
+    const label = date === today ? 'Today' : _formatDateLabel(d);
 
     groupDiv.innerHTML = `<div class="schedule-date-group-label">${label}</div>`;
 
