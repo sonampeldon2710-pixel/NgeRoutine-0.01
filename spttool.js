@@ -2190,10 +2190,17 @@ async function renderTrends(){
     </div>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
       <span style="font-size:13px;font-weight:500;color:var(--text)">🏃 Activity</span>
-      <select id="trend-activity-select" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:13px;font-family:'Sora',sans-serif;cursor:pointer;min-width:160px">
-        <option value="__all__">☰ All habits</option>
-        ${activityKeys.map((key,i)=>{const act=byActivity[key];return `<option value="${key}">${act.icon} ${act.name}</option>`;}).join('')}
-      </select>
+      <div style="position:relative" id="trend-multi-wrap">
+        <button type="button" id="trend-multi-btn" style="padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:13px;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:160px;justify-content:space-between">
+          <span id="trend-multi-label">☰ All habits</span><span style="font-size:10px;opacity:.5">▾</span>
+        </button>
+        <div id="trend-multi-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:200;min-width:190px;overflow:hidden;flex-direction:column">
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 13px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);background:var(--green-lt,#f0faf5)">
+            <input type="checkbox" id="trend-cb-all" checked style="accent-color:var(--green)"> <span>☰ All habits</span>
+          </label>
+          ${activityKeys.map((key,i)=>{const act=byActivity[key];const color=TREND_PALETTE[i%TREND_PALETTE.length];return `<label style="display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;font-size:13px;transition:background .12s" onmouseover="this.style.background='var(--green-lt,#f0faf5)'" onmouseout="this.style.background='transparent'"><input type="checkbox" class="trend-cb-act" data-key="${key}" checked style="accent-color:${color}"> <span>${act.icon} ${act.name}</span></label>`;}).join('')}
+        </div>
+      </div>
       <span id="trend-range-label" style="font-size:11px;color:var(--hint)"></span>
     </div>`;
   content.appendChild(filterCard);
@@ -2281,15 +2288,19 @@ async function renderTrends(){
     grid.querySelectorAll('.trend-act-badge').forEach(badge=>{
       badge.addEventListener('click',()=>{
         const k = badge.dataset.key;
-        // Toggle: if only this key is selected, go back to all; else select only this
+        // Toggle: if only this key selected → go back to all; else select only this
         if(_trendSelectedKeys.size===1 && _trendSelectedKeys.has(k)){
           _trendSelectedKeys = new Set(activityKeys);
-          const actSel = document.getElementById('trend-activity-select');
-          if (actSel) actSel.value = '__all__';
+          document.querySelectorAll('.trend-cb-act').forEach(cb => cb.checked = true);
+          const allCb = document.getElementById('trend-cb-all'); if (allCb) allCb.checked = true;
+          const lbl = document.getElementById('trend-multi-label'); if (lbl) lbl.textContent = '☰ All habits';
         } else {
           _trendSelectedKeys = new Set([k]);
-          const actSel = document.getElementById('trend-activity-select');
-          if (actSel) actSel.value = k;
+          document.querySelectorAll('.trend-cb-act').forEach(cb => { cb.checked = cb.dataset.key === k; });
+          const allCb = document.getElementById('trend-cb-all'); if (allCb) allCb.checked = false;
+          const act = byActivity[k];
+          const lbl = document.getElementById('trend-multi-label');
+          if (lbl && act) lbl.textContent = act.icon + ' ' + act.name;
         }
         refreshChart();
         buildBadges();
@@ -2323,17 +2334,60 @@ async function renderTrends(){
       });
     });
 
-    const actSel = document.getElementById('trend-activity-select');
-    if (actSel) {
-      actSel.addEventListener('change', () => {
-        const val = actSel.value;
-        if (val === '__all__') {
-          _trendSelectedKeys = new Set(activityKeys);
-        } else {
-          _trendSelectedKeys = new Set([val]);
-        }
-        refreshChart(); buildBadges();
+    // ── Multi-select activity dropdown ──
+    function _syncMultiLabel() {
+      const allCb  = document.getElementById('trend-cb-all');
+      const actCbs = document.querySelectorAll('.trend-cb-act');
+      const checkedKeys = [...actCbs].filter(cb => cb.checked).map(cb => cb.dataset.key);
+      const allChecked  = checkedKeys.length === activityKeys.length;
+      if (allCb) allCb.checked = allChecked;
+      const lbl = document.getElementById('trend-multi-label');
+      if (!lbl) return;
+      if (allChecked || checkedKeys.length === 0) {
+        lbl.textContent = '☰ All habits';
+      } else if (checkedKeys.length === 1) {
+        const act = byActivity[checkedKeys[0]];
+        lbl.textContent = act ? act.icon + ' ' + act.name : '1 selected';
+      } else {
+        lbl.textContent = checkedKeys.length + ' habits';
+      }
+    }
+
+    function _applyMultiSelection() {
+      const actCbs = document.querySelectorAll('.trend-cb-act');
+      const checkedKeys = [...actCbs].filter(cb => cb.checked).map(cb => cb.dataset.key);
+      _trendSelectedKeys = checkedKeys.length ? new Set(checkedKeys) : new Set(activityKeys);
+      _syncMultiLabel();
+      refreshChart(); buildBadges();
+    }
+
+    const multiBtn = document.getElementById('trend-multi-btn');
+    const multiDd  = document.getElementById('trend-multi-dropdown');
+    if (multiBtn && multiDd) {
+      multiBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        multiDd.style.display = multiDd.style.display === 'none' ? 'flex' : 'none';
       });
+      // All habits checkbox
+      const allCb = document.getElementById('trend-cb-all');
+      if (allCb) {
+        allCb.addEventListener('change', () => {
+          document.querySelectorAll('.trend-cb-act').forEach(cb => cb.checked = allCb.checked);
+          _applyMultiSelection();
+        });
+      }
+      // Individual checkboxes
+      document.querySelectorAll('.trend-cb-act').forEach(cb => {
+        cb.addEventListener('change', () => _applyMultiSelection());
+      });
+      // Close on outside click
+      const _closeMD = e => {
+        const wrap = document.getElementById('trend-multi-wrap');
+        if (wrap && !wrap.contains(e.target)) multiDd.style.display = 'none';
+      };
+      if (window._trendMultiDropListener) document.removeEventListener('click', window._trendMultiDropListener);
+      window._trendMultiDropListener = _closeMD;
+      document.addEventListener('click', _closeMD);
     }
   },0);
 
@@ -2375,8 +2429,13 @@ async function renderTrends(){
       const k=e.detail&&e.detail.key;
       if(k){
         _trendSelectedKeys=new Set([k]);
-        const actSel = document.getElementById('trend-activity-select');
-        if (actSel) actSel.value = k;
+        // Sync checkboxes
+        document.querySelectorAll('.trend-cb-act').forEach(cb => { cb.checked = cb.dataset.key === k; });
+        const allCb = document.getElementById('trend-cb-all');
+        if (allCb) allCb.checked = false;
+        const act = byActivity[k];
+        const lbl = document.getElementById('trend-multi-label');
+        if (lbl && act) lbl.textContent = act.icon + ' ' + act.name;
         refreshChart(); buildBadges();
       }
     };
