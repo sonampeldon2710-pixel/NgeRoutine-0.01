@@ -1782,3 +1782,84 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
   color: var(--text);
   background: var(--surf2);
 }
+/* ── HISTORY TAB: period selects & activity dropdown ── */
+.hist-period-sel {
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--rsm);
+  background: var(--surf);
+  color: var(--text);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a09c96' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  padding-right: 28px;
+}
+.hist-period-sel:hover,
+.hist-period-sel:focus { border-color: var(--green); }
+
+.hist-act-btn {
+  white-space: nowrap;
+  min-width: 110px;
+  text-align: left;
+}
+
+.hist-act-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  min-width: 180px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideDown .15s ease;
+}
+
+.hist-act-item {
+  padding: 10px 14px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  border-bottom: .5px solid var(--border);
+  transition: background .15s;
+}
+.hist-act-item:last-child { border-bottom: none; }
+.hist-act-item:hover { background: var(--green-lt); color: var(--green-dk); }
+.hist-act-item.active { background: var(--green-lt); color: var(--green-dk); font-weight: 600; }
+
+/* ── Monthly summary strip ── */
+.hist-month-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--green-lt);
+  border: 1px solid rgba(29,158,117,0.18);
+  border-radius: var(--rsm);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.hist-month-label {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+.hist-month-stats { color: var(--muted); font-size: 12px; }
+.hist-month-stats strong { color: var(--green-dk); }

@@ -2550,6 +2550,8 @@ function lfGoToDate(dateStr){
   },100);
 }
 let historyFilter = 'all';
+let historyYear   = null;
+let historyMonth  = null;
 
 /* Format a log entry's duration for display — always readable */
 function _fmtLogDuration(l) {
@@ -2563,7 +2565,7 @@ function _fmtLogDuration(l) {
 }
 
 function renderHistory() {
-  const content = document.getElementById('history-content');
+  const content    = document.getElementById('history-content');
   const filterWrap = document.getElementById('history-filter');
   if (!content || !filterWrap) return;
 
@@ -2574,100 +2576,202 @@ function renderHistory() {
     return;
   }
 
-  const habitIds = [...new Set(ud.logs.map(l => l.habitId))];
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+
+  const allLogs = ud.logs.filter(l => !l.isQuickAlarm);
+
+  // Build year list from actual data
+  const yearSet = new Set(allLogs.map(l => normalizeDateValue(l.date).slice(0,4)).filter(Boolean));
+  const years   = [...yearSet].sort((a,b) => b - a);
+
+  const now = new Date();
+  if (historyYear  === null) historyYear  = String(now.getFullYear());
+  if (historyMonth === null) historyMonth = String(now.getMonth()+1).padStart(2,'0');
+  if (!yearSet.has(historyYear) && years.length) historyYear = years[0];
+
+  // Build month list for selected year
+  const monthSet = new Set(
+    allLogs
+      .map(l => normalizeDateValue(l.date))
+      .filter(d => d && d.startsWith(historyYear))
+      .map(d => d.slice(5,7))
+  );
+  const months = [...monthSet].sort((a,b) => b - a);
+  if (!monthSet.has(historyMonth) && months.length) historyMonth = months[0];
+
+  // ── Filter bar ────────────────────────────────────────────────────────
   filterWrap.innerHTML = '';
-  
-  // Hamburger menu container
+  filterWrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px';
+
+  // Year select
+  const yearSel = document.createElement('select');
+  yearSel.className = 'hist-period-sel';
+  years.forEach(y => {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === historyYear) o.selected = true;
+    yearSel.appendChild(o);
+  });
+  yearSel.onchange = () => {
+    historyYear  = yearSel.value;
+    historyMonth = null;
+    renderHistory();
+  };
+
+  // Month select
+  const monthSel = document.createElement('select');
+  monthSel.className = 'hist-period-sel';
+  months.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = MONTH_NAMES[parseInt(m,10)-1];
+    if (m === historyMonth) o.selected = true;
+    monthSel.appendChild(o);
+  });
+  monthSel.onchange = () => {
+    historyMonth = monthSel.value;
+    renderHistory();
+  };
+
+  filterWrap.appendChild(yearSel);
+  filterWrap.appendChild(monthSel);
+
+  // Divider
+  const divider = document.createElement('div');
+  divider.style.cssText = 'width:1px;height:22px;background:var(--border);margin:0 2px;flex-shrink:0';
+  filterWrap.appendChild(divider);
+
+  // Activity hamburger (existing behaviour)
+  const activeLog = allLogs.find(l => l.habitId === historyFilter);
+  const actLabel  = historyFilter === 'all'
+    ? '☰ Activities'
+    : (activeLog ? activeLog.habitIcon + ' ' + activeLog.habitName : '☰ Activities');
+
   const hamburgerContainer = document.createElement('div');
   hamburgerContainer.style.cssText = 'position:relative;display:inline-block';
-  
-  // Hamburger button
+
   const hamburgerBtn = document.createElement('button');
   hamburgerBtn.type = 'button';
-  hamburgerBtn.textContent = '☰ Activities';
-  hamburgerBtn.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);cursor:pointer;font-size:13px;font-weight:500';
-  
-  // Dropdown menu
+  hamburgerBtn.textContent = actLabel;
+  hamburgerBtn.className = 'hist-period-sel hist-act-btn';
+
   const dropdown = document.createElement('div');
   dropdown.id = 'history-filter-dropdown';
-  dropdown.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:180px;display:none;flex-direction:column';
-  
-  // "All" option
+  dropdown.className = 'hist-act-dropdown';
+
   const allOption = document.createElement('button');
   allOption.type = 'button';
   allOption.textContent = '🗂 All';
-  allOption.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${historyFilter === 'all' ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s;border-bottom:1px solid var(--border)`;
-  allOption.onmouseover = () => allOption.style.background = 'var(--green-lt)';
-  allOption.onmouseout = () => allOption.style.background = historyFilter === 'all' ? 'var(--green-lt)' : 'transparent';
+  allOption.className = 'hist-act-item' + (historyFilter === 'all' ? ' active' : '');
   allOption.onclick = () => { historyFilter = 'all'; dropdown.style.display = 'none'; renderHistory(); };
   dropdown.appendChild(allOption);
-  
-  // Build unique categories from logs — exclude quick alarms
+
   const seen = new Set();
-  ud.logs.filter(l => !l.isQuickAlarm).forEach(l => {
-    if(seen.has(l.habitId)) return;
+  allLogs.forEach(l => {
+    if (seen.has(l.habitId)) return;
     seen.add(l.habitId);
-    const option = document.createElement('button');
-    option.type = 'button';
-    option.textContent = l.habitIcon + ' ' + l.habitName;
-    option.style.cssText = `padding:10px 14px;text-align:left;border:none;background:${historyFilter === l.habitId ? 'var(--green-lt)' : 'transparent'};color:var(--text);cursor:pointer;font-size:13px;transition:background .2s`;
-    option.onmouseover = () => option.style.background = 'var(--green-lt)';
-    option.onmouseout = () => option.style.background = historyFilter === l.habitId ? 'var(--green-lt)' : 'transparent';
-    option.onclick = () => { historyFilter = l.habitId; dropdown.style.display = 'none'; renderHistory(); };
-    dropdown.appendChild(option);
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.textContent = l.habitIcon + ' ' + l.habitName;
+    opt.className = 'hist-act-item' + (historyFilter === l.habitId ? ' active' : '');
+    opt.onclick = () => { historyFilter = l.habitId; dropdown.style.display = 'none'; renderHistory(); };
+    dropdown.appendChild(opt);
   });
-  
-  // Toggle dropdown on hamburger click
+
   hamburgerBtn.onclick = () => {
     dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
   };
-  
   hamburgerContainer.appendChild(hamburgerBtn);
   hamburgerContainer.appendChild(dropdown);
   filterWrap.appendChild(hamburgerContainer);
-  
-  // Close dropdown when clicking outside
+
   setTimeout(() => {
-    const closeDropdown = (e) => {
-      if (!hamburgerContainer.contains(e.target) && dropdown.style.display === 'flex') {
+    const close = (e) => {
+      if (!hamburgerContainer.contains(e.target) && dropdown.style.display === 'flex')
         dropdown.style.display = 'none';
-      }
     };
-    document.addEventListener('click', closeDropdown);
-    // Clean up previous listeners (simple approach)
     if (window._historyDropdownListener) document.removeEventListener('click', window._historyDropdownListener);
-    window._historyDropdownListener = closeDropdown;
+    window._historyDropdownListener = close;
+    document.addEventListener('click', close);
   }, 0);
 
-  const logs = ud.logs
-    .filter(l => !l.isQuickAlarm && (historyFilter === 'all' || l.habitId === historyFilter))
-    .slice()
-    .sort((a, b) => b.id - a.id);
+  // ── Filter logs to period + activity ─────────────────────────────────
+  const prefix = historyYear + '-' + historyMonth;
 
-  const byDate = {};
-  logs.forEach(l => {
-    const dateKey = normalizeDateValue(l.date);
-    if (!byDate[dateKey]) byDate[dateKey] = [];
-    byDate[dateKey].push(l);
-  });
+  const logs = allLogs
+    .filter(l => {
+      const d = normalizeDateValue(l.date);
+      return d.startsWith(prefix) && (historyFilter === 'all' || l.habitId === historyFilter);
+    })
+    .slice()
+    .sort((a,b) => b.id - a.id);
 
   content.innerHTML = '';
 
+  // ── Monthly summary strip ─────────────────────────────────────────────
+  if (logs.length) {
+    const totalHrs = logs.reduce((s,l) => {
+      return s + (l.unit === 'mins' ? l.duration/60 : Number(l.duration)||0);
+    }, 0);
+    const totalMins  = Math.round(totalHrs * 60);
+    const h = Math.floor(totalMins/60), m = totalMins%60;
+    const totalLabel = totalMins < 60
+      ? totalMins + 'min'
+      : (h + 'h' + (m ? ' ' + m + 'min' : ''));
+
+    const summary = document.createElement('div');
+    summary.className = 'hist-month-summary';
+    summary.innerHTML = `
+      <span class="hist-month-label">${MONTH_NAMES[parseInt(historyMonth,10)-1]} ${historyYear}</span>
+      <span class="hist-month-stats">${logs.length} entr${logs.length===1?'y':'ies'} &nbsp;·&nbsp; <strong>${totalLabel}</strong> total</span>`;
+    content.appendChild(summary);
+  }
+
+  // ── No entries state ──────────────────────────────────────────────────
+  if (!logs.length) {
+    content.innerHTML += `<div class="no-data-msg" style="padding:36px 20px">
+      <div class="no-data-icon">🗓️</div>
+      <div>No logs for ${MONTH_NAMES[parseInt(historyMonth,10)-1]} ${historyYear}.</div>
+      <div style="margin-top:6px;font-size:12px">Try a different month or activity filter.</div>
+    </div>`;
+    return;
+  }
+
+  // ── Group by day and render ───────────────────────────────────────────
+  const byDate = {};
+  logs.forEach(l => {
+    const dk = normalizeDateValue(l.date);
+    if (!byDate[dk]) byDate[dk] = [];
+    byDate[dk].push(l);
+  });
+
+  const todayStr     = new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now()-86400000).toISOString().split('T')[0];
+
   Object.keys(byDate).sort((a,b) => b.localeCompare(a)).forEach(dateStr => {
+    const d   = new Date(dateStr + 'T12:00:00');
+    const lbl = dateStr === todayStr
+      ? 'Today'
+      : dateStr === yesterdayStr
+        ? 'Yesterday'
+        : d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+
     const heading = document.createElement('div');
-    const d = new Date(dateStr + 'T12:00:00');
-    const isToday = dateStr === new Date().toISOString().split('T')[0];
-    const isYesterday = dateStr === new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const label = isToday ? 'Today' : isYesterday ? 'Yesterday' : d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
     heading.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 0 8px;border-top:.5px solid var(--border);margin-top:4px';
+
     const title = document.createElement('div');
-    title.style.cssText = 'font-size:11px;font-weight:600;color:var(--hint);letter-spacing:.07em;text-transform:uppercase;';
-    title.textContent = label;
+    title.style.cssText = 'font-size:11px;font-weight:600;color:var(--hint);letter-spacing:.07em;text-transform:uppercase';
+    title.textContent = lbl;
+
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.textContent = 'Clear day';
-    clearBtn.style.cssText = 'font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer';
+    clearBtn.style.cssText = 'font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer;font-family:\'Sora\',sans-serif;transition:background .15s';
+    clearBtn.onmouseover = () => clearBtn.style.background = 'var(--red-lt)';
+    clearBtn.onmouseout  = () => clearBtn.style.background = 'transparent';
     clearBtn.onclick = () => clearLogsByDate(dateStr);
+
     heading.appendChild(title);
     heading.appendChild(clearBtn);
     content.appendChild(heading);
@@ -2689,11 +2793,14 @@ function renderHistory() {
             ${l.startTime ? `<span style="color:var(--hint)"> · ${l.startTime}${l.endTime ? '–'+l.endTime : ''}</span>` : ''}
           </div>
         </div>
-        <button onclick="deleteLog(${l.id})" title="Delete this entry" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:16px;padding:2px 4px;flex-shrink:0;line-height:1" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--hint)'">🗑</button>`;
+        <button onclick="deleteLog(${l.id})" title="Delete this entry"
+          style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:16px;padding:2px 4px;flex-shrink:0;line-height:1"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--hint)'">🗑</button>`;
       content.appendChild(item);
     });
   });
 }
+
 
 function _renderActivitySummary(container, ud) {
   return; // Summary section removed per user request
