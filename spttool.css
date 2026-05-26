@@ -11,6 +11,30 @@
   --shadow:0 2px 20px rgba(0,0,0,0.07);
   --shadow-lg:0 8px 40px rgba(0,0,0,0.12);
 }
+/* ── DARK MODE (system preference) ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#111318;--surf:#1c1f26;--surf2:#23262f;--surf3:#2a2d38;
+    --text:#e8e4dc;--muted:#9a9690;--hint:#6b6660;
+    --border:rgba(255,255,255,0.08);--borderf:rgba(255,255,255,0.15);
+    --green:#b86ab8;--green-lt:rgba(161,74,161,0.15);--green-dk:#c990c9;
+    --amber:#d4922a;--amber-lt:rgba(186,117,23,0.15);
+    --red:#c04540;--red-lt:rgba(173,49,35,0.15);
+    --purple:#7b73d4;--purple-lt:rgba(93,83,197,0.18);
+    --shadow:0 2px 20px rgba(0,0,0,0.35);
+    --shadow-lg:0 8px 40px rgba(0,0,0,0.55);
+  }
+  .app-header,
+  .nav-tabs,
+  .settings-header,
+  .add-alarm-header,
+  .schedule-modal-box .add-alarm-header,
+  .auth-card,
+  .modal-box { background:var(--surf) !important; }
+  .auth-tabs { background:var(--surf2) !important; }
+  .auth-tab.active { background:var(--surf) !important; }
+}
+
 body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .screen{display:none;min-height:100vh}
 .screen.active{display:flex}
