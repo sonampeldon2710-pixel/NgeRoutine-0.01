@@ -119,6 +119,7 @@ function togglePw(id, btn) {
 
 
 async function doSignup() {
+  unlockAudio();
   const name = document.getElementById('su-name').value.trim();
   const user = document.getElementById('su-user').value.trim().toLowerCase();
   const pass = document.getElementById('su-pass').value;
@@ -148,6 +149,7 @@ async function doSignup() {
 }
 
 async function doLogin() {
+  unlockAudio();
   const user = document.getElementById('li-user').value.trim().toLowerCase();
   const pass = document.getElementById('li-pass').value;
   if (!user || !pass) return showMsg('li-msg', 'Please enter your username and password.', 'err');
@@ -192,6 +194,7 @@ function launchApp(user) {
   renderHistory();
   renderTrackerSchedules();
   startAlarmWatcher();
+  setTimeout(_rearmQuickAlarms, 500);
   window.scrollTo(0, 0);
 }
 function doLogout() {
@@ -1047,30 +1050,62 @@ const SOUNDS=[
   {id:'soft',name:'🎶 Soft tone'},
 ];
 
-let audioCtx=null;
+let _alarmLoopTimer = null;
+let _alarmLoopAudio = null;
+let _audioCtx = null;
 
-function getAudioCtx(){
-  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  return audioCtx;
+/* Call once on login (user gesture) to unlock AudioContext */
+function unlockAudio() {
+  if (_audioCtx) return;
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // play a silent blip to unlock it
+    const g = _audioCtx.createGain(); g.gain.value = 0; g.connect(_audioCtx.destination);
+    const o = _audioCtx.createOscillator(); o.connect(g);
+    o.start(); o.stop(_audioCtx.currentTime + 0.001);
+  } catch(e) { _audioCtx = null; }
 }
 
-function playSound(soundId,customDataUrl) {
-  if(customDataUrl){
-    const a=new Audio(customDataUrl);a.play();return;
+function stopAlarmSound() {
+  if (_alarmLoopTimer) { clearInterval(_alarmLoopTimer); _alarmLoopTimer = null; }
+  if (_alarmLoopAudio) { try { _alarmLoopAudio.pause(); _alarmLoopAudio.currentTime = 0; } catch(e){} _alarmLoopAudio = null; }
+}
+
+function _beep(soundId) {
+  try {
+    const ctx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    const freqs = { bell:[523,659,784], chime:[880,1047,1319], nature:[440,554,659], soft:[349,440,523] };
+    const f = freqs[soundId] || freqs.bell;
+    osc.frequency.setValueAtTime(f[0], ctx.currentTime);
+    osc.frequency.setValueAtTime(f[1], ctx.currentTime + 0.15);
+    osc.frequency.setValueAtTime(f[2], ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+    osc.start(); osc.stop(ctx.currentTime + 0.9);
+  } catch(e) {}
+}
+
+function playSound(soundId, customDataUrl) {
+  stopAlarmSound();
+  if (customDataUrl) {
+    _alarmLoopAudio = new Audio(customDataUrl);
+    _alarmLoopAudio.loop = true;
+    _alarmLoopAudio.play().catch(()=>{});
+    return;
   }
-  const ctx=getAudioCtx();
-  const osc=ctx.createOscillator();
-  const gain=ctx.createGain();
-  osc.connect(gain);gain.connect(ctx.destination);
-  const freqs={bell:[523,659,784],chime:[880,1047,1319],nature:[440,554,659],soft:[349,440,523]};
-  const f=freqs[soundId]||freqs.bell;
-  osc.frequency.setValueAtTime(f[0],ctx.currentTime);
-  osc.frequency.setValueAtTime(f[1],ctx.currentTime+0.15);
-  osc.frequency.setValueAtTime(f[2],ctx.currentTime+0.3);
-  gain.gain.setValueAtTime(0.3,ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);
-  osc.start();osc.stop(ctx.currentTime+0.8);
+  _beep(soundId);
+  _alarmLoopTimer = setInterval(() => _beep(soundId), 1500);
 }
+
+function previewSound(soundId, customDataUrl) {
+  if (customDataUrl) { const a = new Audio(customDataUrl); a.play().catch(()=>{}); return; }
+  _beep(soundId);
+}
+
 
 function fmt12(val24){
   if(!val24)return{h:'',m:'',ampm:'AM'};
@@ -1269,7 +1304,7 @@ function selectSound(habitId,soundId,btn){
   const container=btn.closest('.sound-opts');
   container.querySelectorAll('.sound-btn').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
-  playSound(soundId,ud.customSounds[habitId]);
+  previewSound(soundId,ud.customSounds[habitId]);
   saveUserData();
 }
 
@@ -1287,7 +1322,7 @@ function uploadSound(habitId,input){
       const upBtn=input.previousElementSibling;
       if(upBtn){upBtn.textContent='✅ '+file.name.substring(0,16);}
     }
-    playSound('custom',e.target.result);
+    previewSound('custom',e.target.result);
   };
   reader.readAsDataURL(file);
 }
@@ -1389,7 +1424,7 @@ function triggerAlarm(habit,soundId,customData){
   document.getElementById('alarm-modal-sub').textContent=`Your ${habit.name.toLowerCase()} reminder is here. Ready to record?`;
   document.getElementById('alarm-modal').style.display='flex';
 }
-function dismissAlarm(){document.getElementById('alarm-modal').style.display='none';currentAlarmHabit=null;}
+function dismissAlarm(){stopAlarmSound();document.getElementById('alarm-modal').style.display='none';currentAlarmHabit=null;}
 function goLogFromAlarm(){
   document.getElementById('alarm-modal').style.display='none';
   if(currentAlarmHabit){
@@ -1748,12 +1783,12 @@ function lfSelectSound(btn){
   btn.classList.add('sel');
   _lfSound=btn.dataset.sound;
   _lfCustomSound=null;
-  playSound(_lfSound,null);
+  previewSound(_lfSound,null);
 }
 function lfUploadSound(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{_lfCustomSound=e.target.result;_lfSound='custom';playSound('custom',_lfCustomSound);};
+  reader.onload=e=>{_lfCustomSound=e.target.result;_lfSound='custom';previewSound('custom',_lfCustomSound);};
   reader.readAsDataURL(file);
 }
 function lfSaveLog(){
@@ -2153,11 +2188,13 @@ async function renderTrends(){
         <button type="button" class="trend-quick-btn" data-days="0" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">All</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-      <span style="font-size:13px;font-weight:500;color:var(--text)">🏷 Habits</span>
-      <button type="button" id="trend-select-all" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">Select all</button>
-      <button type="button" id="trend-clear-all" style="padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surf);color:var(--muted);cursor:pointer;font-size:11px">Clear</button>
-      <div id="trend-habit-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+      <span style="font-size:13px;font-weight:500;color:var(--text)">🏃 Activity</span>
+      <select id="trend-activity-select" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:13px;font-family:'Sora',sans-serif;cursor:pointer;min-width:160px">
+        <option value="__all__">☰ All habits</option>
+        ${activityKeys.map((key,i)=>{const act=byActivity[key];return `<option value="${key}">${act.icon} ${act.name}</option>`;}).join('')}
+      </select>
+      <span id="trend-range-label" style="font-size:11px;color:var(--hint)"></span>
     </div>`;
   content.appendChild(filterCard);
 
@@ -2167,39 +2204,12 @@ async function renderTrends(){
   card.style.cssText='padding:20px 16px 16px';
   card.innerHTML=`
     <div class="chart-title" style="margin-bottom:4px">📈 Activity Trends</div>
-    <div class="chart-sub" style="margin-bottom:14px" id="trend-range-label">Daily hours · click a habit chip to toggle · drag date range above</div>
+    <div class="chart-sub" style="margin-bottom:14px">Daily hours · select an activity above or click a badge below</div>
     <div style="position:relative;width:100%;height:280px;margin-top:8px">
       <canvas id="chart-combined-trends" role="img" aria-label="Combined activity trends chart"></canvas>
     </div>
     <div class="trend-acts-grid" id="trend-acts-grid" style="margin-top:16px"></div>`;
   content.appendChild(card);
-
-  /* ── 6. Build habit chips ── */
-  function buildChips(){
-    const wrap = document.getElementById('trend-habit-chips');
-    if(!wrap) return;
-    wrap.innerHTML = activityKeys.map((key,i)=>{
-      const act = byActivity[key];
-      const color = TREND_PALETTE[i%TREND_PALETTE.length];
-      const on = _trendSelectedKeys.has(key);
-      return `<button type="button" class="trend-chip" data-key="${key}" style="
-        padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;
-        border:1.5px solid ${color};
-        background:${on ? color : 'transparent'};
-        color:${on ? '#fff' : color};
-        transition:all .15s;font-weight:500">${act.icon} ${act.name}</button>`;
-    }).join('');
-    wrap.querySelectorAll('.trend-chip').forEach(chip=>{
-      chip.addEventListener('click',()=>{
-        const k = chip.dataset.key;
-        if(_trendSelectedKeys.has(k)) _trendSelectedKeys.delete(k);
-        else _trendSelectedKeys.add(k);
-        buildChips();
-        refreshChart();
-        buildBadges();
-      });
-    });
-  }
 
   /* ── 7. Get filtered dates and datasets ── */
   function getFilteredDates(){
@@ -2271,9 +2281,16 @@ async function renderTrends(){
     grid.querySelectorAll('.trend-act-badge').forEach(badge=>{
       badge.addEventListener('click',()=>{
         const k = badge.dataset.key;
-        if(_trendSelectedKeys.has(k)) _trendSelectedKeys.delete(k);
-        else _trendSelectedKeys.add(k);
-        buildChips();
+        // Toggle: if only this key is selected, go back to all; else select only this
+        if(_trendSelectedKeys.size===1 && _trendSelectedKeys.has(k)){
+          _trendSelectedKeys = new Set(activityKeys);
+          const actSel = document.getElementById('trend-activity-select');
+          if (actSel) actSel.value = '__all__';
+        } else {
+          _trendSelectedKeys = new Set([k]);
+          const actSel = document.getElementById('trend-activity-select');
+          if (actSel) actSel.value = k;
+        }
         refreshChart();
         buildBadges();
       });
@@ -2306,14 +2323,18 @@ async function renderTrends(){
       });
     });
 
-    document.getElementById('trend-select-all').addEventListener('click',()=>{
-      _trendSelectedKeys = new Set(activityKeys);
-      buildChips(); refreshChart(); buildBadges();
-    });
-    document.getElementById('trend-clear-all').addEventListener('click',()=>{
-      _trendSelectedKeys = new Set();
-      buildChips(); refreshChart(); buildBadges();
-    });
+    const actSel = document.getElementById('trend-activity-select');
+    if (actSel) {
+      actSel.addEventListener('change', () => {
+        const val = actSel.value;
+        if (val === '__all__') {
+          _trendSelectedKeys = new Set(activityKeys);
+        } else {
+          _trendSelectedKeys = new Set([val]);
+        }
+        refreshChart(); buildBadges();
+      });
+    }
   },0);
 
   /* ── 11. Render chart ── */
@@ -2345,7 +2366,6 @@ async function renderTrends(){
       }
     });
 
-    buildChips();
     buildBadges();
     refreshChart();
 
@@ -2353,7 +2373,12 @@ async function renderTrends(){
     if(window._snapshotFocusListener) document.removeEventListener('snapshot-focus',window._snapshotFocusListener);
     window._snapshotFocusListener=(e)=>{
       const k=e.detail&&e.detail.key;
-      if(k){ _trendSelectedKeys=new Set([k]); buildChips(); refreshChart(); buildBadges(); }
+      if(k){
+        _trendSelectedKeys=new Set([k]);
+        const actSel = document.getElementById('trend-activity-select');
+        if (actSel) actSel.value = k;
+        refreshChart(); buildBadges();
+      }
     };
     document.addEventListener('snapshot-focus',window._snapshotFocusListener);
   },50);
@@ -3042,7 +3067,7 @@ function aaSelectSound(btn) {
   btn.classList.add('sel');
   _aaSound = btn.dataset.sound;
   _aaCustomSoundData = null;
-  playSound(_aaSound, null);
+  previewSound(_aaSound, null);
 }
 
 function aaUploadSound(input) {
@@ -3053,7 +3078,7 @@ function aaUploadSound(input) {
     _aaSound = 'custom';
     document.getElementById('aa-sounds').querySelectorAll('.sound-btn').forEach(b=>b.classList.remove('sel'));
     input.previousElementSibling.textContent = '✅ ' + file.name.substring(0,16);
-    playSound('custom', _aaCustomSoundData);
+    previewSound('custom', _aaCustomSoundData);
   };
   reader.readAsDataURL(file);
 }
@@ -3147,26 +3172,62 @@ let _qaTimers = [];
 
 function _scheduleQuickAlarm(entry) {
   const now = new Date();
-  const [fh, fm] = entry.fromTime.split(':').map(Number);
-  const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), fh, fm, 0);
-  let delay = alarmTime - now;
-  if(delay < 0) delay += 86400000; // tomorrow
-  if(delay > 86400000) return; // more than a day away, skip for now
 
-  const t = setTimeout(() => {
+  function _getSound() {
     const ud = getUserData();
-    const sound  = entry.sound;
+    const snd = entry.sound || 'bell';
     const custom = (ud && ud.customSounds) ? ud.customSounds['quickalarm'] : null;
-    playSound(sound === 'custom' ? 'custom' : sound, sound === 'custom' ? custom || _aaCustomSoundData : null);
+    return { snd, custom };
+  }
 
-    const catIcon = AA_CAT_ICONS[entry.category] || '⏰';
-    document.getElementById('alarm-modal-icon').textContent = catIcon;
-    document.getElementById('alarm-modal-title').textContent = `Time for ${entry.category}!`;
-    document.getElementById('alarm-modal-sub').textContent = `${entry.fromDisplay} → ${entry.toDisplay} · ${entry.duration}`;
+  function _showModal(icon, title, sub) {
+    document.getElementById('alarm-modal-icon').textContent = icon;
+    document.getElementById('alarm-modal-title').textContent = title;
+    document.getElementById('alarm-modal-sub').textContent = sub;
     document.getElementById('alarm-modal').style.display = 'flex';
     currentAlarmHabit = { id: 'quickalarm', name: entry.category };
-  }, delay);
-  _qaTimers.push(t);
+  }
+
+  const catIcon = AA_CAT_ICONS[entry.category] || String.fromCodePoint(0x23F0);
+
+  // FROM: time to START
+  const [fh, fm] = entry.fromTime.split(':').map(Number);
+  const fromMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), fh, fm, 0) - now;
+  if (fromMs >= 0 && fromMs <= 86400000) {
+    _qaTimers.push(setTimeout(() => {
+      const { snd, custom } = _getSound();
+      playSound(snd === 'custom' ? 'custom' : snd, snd === 'custom' ? custom || _aaCustomSoundData : null);
+      _showModal(catIcon, String.fromCodePoint(0x1F7E2) + ' Time to start ' + entry.category + '!', entry.fromDisplay + ' to ' + entry.toDisplay);
+    }, fromMs));
+  }
+
+  // UNTIL: time to STOP
+  const [th, tm] = entry.toTime.split(':').map(Number);
+  const toMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), th, tm, 0) - now;
+  if (toMs >= 0 && toMs <= 86400000) {
+    _qaTimers.push(setTimeout(() => {
+      stopAlarmSound();
+      const { snd, custom } = _getSound();
+      playSound(snd === 'custom' ? 'custom' : snd, snd === 'custom' ? custom || _aaCustomSoundData : null);
+      _showModal(catIcon, String.fromCodePoint(0x1F534) + ' Time to stop ' + entry.category + '!', entry.toDisplay + ' — your session has ended');
+    }, toMs));
+  }
+}
+
+
+/* Re-arm today's quick alarms and schedules after login/refresh */
+function _rearmQuickAlarms() {
+  const ud = getUserData(); if (!ud) return;
+  const n = new Date();
+  const todayStr = n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  if (ud.quickAlarms) ud.quickAlarms.filter(a => a.date === todayStr).forEach(_scheduleQuickAlarm);
+  if (ud.schedules) {
+    ud.schedules.filter(s => s.date === todayStr).forEach(s => {
+      const fromDisp = _scFmt12(s.fromTime);
+      const toDisp   = _scFmt12(s.toTime);
+      _scheduleQuickAlarm({ id: s.id, date: s.date, fromTime: s.fromTime, toTime: s.toTime, fromDisplay: fromDisp, toDisplay: toDisp, category: s.category, sound: 'bell' });
+    });
+  }
 }
 
 /* Extend renderTrends to include Quick Alarm data by category */
@@ -3484,6 +3545,21 @@ async function saveSchedule() {
   msgEl.className = 'auth-msg ok';
   saveUserData();
 
+  // ── Fire start + end alarms if the schedule is for today ──
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (date === todayStr) {
+    _scheduleQuickAlarm({
+      id: _scEditId || Date.now(),
+      date,
+      fromTime: from,
+      toTime: to,
+      fromDisplay: fromDisp,
+      toDisplay: toDisp,
+      category,
+      sound: 'bell'
+    });
+  }
+
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
@@ -3544,7 +3620,32 @@ function renderTrackerSchedules() {
     const d = new Date(date + 'T00:00:00');
     const label = date === today ? 'Today' : _formatDateLabel(d);
 
-    groupDiv.innerHTML = `<div class="schedule-date-group-label">${label}</div>`;
+    if (date === today) {
+      const headerDiv = document.createElement('div');
+      headerDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px';
+      headerDiv.innerHTML = `<div class="schedule-date-group-label" style="margin-bottom:0">${label}</div>`;
+      const clearTodayBtn = document.createElement('button');
+      clearTodayBtn.type = 'button';
+      clearTodayBtn.textContent = '🗑 Clear today';
+      clearTodayBtn.style.cssText = 'font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--hint);cursor:pointer;font-family:\'Sora\',sans-serif;transition:background .15s,color .15s;flex-shrink:0';
+      clearTodayBtn.onmouseover = () => { clearTodayBtn.style.background = 'var(--red-lt,#fdecea)'; clearTodayBtn.style.color = 'var(--red,#c0392b)'; };
+      clearTodayBtn.onmouseout  = () => { clearTodayBtn.style.background = 'transparent'; clearTodayBtn.style.color = 'var(--hint)'; };
+      clearTodayBtn.onclick = () => {
+        if (!confirm('Remove all today\'s schedules and their log entries?')) return;
+        const ud = getUserData();
+        const todayIds = (ud.schedules || []).filter(s => s.date === today).map(s => s.id);
+        ud.schedules = (ud.schedules || []).filter(s => s.date !== today);
+        ud.logs = (ud.logs || []).filter(l => !(l.date === today && (l.isSchedule || todayIds.includes(l.scheduleId))));
+        saveUserData();
+        renderTrackerSchedules();
+        renderHistory();
+        renderTrends();
+      };
+      headerDiv.appendChild(clearTodayBtn);
+      groupDiv.appendChild(headerDiv);
+    } else {
+      groupDiv.innerHTML = `<div class="schedule-date-group-label">${label}</div>`;
+    }
 
     groups[date].forEach(sc => {
       const icon = SC_CAT_ICONS[sc.category] || '📌';
@@ -3797,7 +3898,7 @@ function saSelectSound(btn) {
   document.querySelectorAll('#tab-tools .sound-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   _saSound = btn.dataset.sound;
-  playSound(_saSound, null);
+  previewSound(_saSound, null);
 }
 
 function _saGetTime() {
