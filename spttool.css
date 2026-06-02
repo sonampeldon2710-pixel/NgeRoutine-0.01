@@ -1,5 +1,4 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
   --green:#a14aa1;--green-lt:#E1F5EE;--green-dk:#acc9c1;
   --amber:#BA7517;--amber-lt:#FAEEDA;
@@ -1880,6 +1879,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
   margin-bottom: 16px;
   font-size: 13px;
 }
+
 .hist-month-label {
   font-family: 'Fraunces', serif;
   font-weight: 600;
