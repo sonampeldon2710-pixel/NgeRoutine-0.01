@@ -1,7 +1,7 @@
 // Paste this in browser console to test
 fetch('https://ngeroutinetool-production.up.railway.app/health')
   .then(r => console.log('Status:', r.status))
-  
+
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
@@ -133,7 +133,7 @@ app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/habits',    require('./routes/habits'));
 app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
-app.use('/api/alarms',    require('./routes/alarms'));
+// app.use('/api/alarms',    require('./routes/alarms'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 app.use('/api/checkins',  require('./routes/checkins')); 
 
