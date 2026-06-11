@@ -346,7 +346,7 @@
 //   body: JSON.stringify(data)
 // });
 
-const API_BASE = 'https://ngeroutinetool-production.up.railway.app/api';
+const API_BASE = 'https://ngeroutine-001-production.up.railway.app/api';
 
 let currentUser = null;
 let currentAlarmHabit = null;
