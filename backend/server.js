@@ -13,8 +13,7 @@ app.options('*', cors());
 app.use(express.json());
 
 const path = require('path');
-
-const frontendPath = path.join(__dirname, '..'); 
+const frontendPath = path.join(__dirname, '..');
 app.use(express.static(frontendPath));
 
 app.get('/', (req, res) => {
@@ -22,11 +21,7 @@ app.get('/', (req, res) => {
   if (require('fs').existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
-    res.json({ 
-      message: "Backend is running!", 
-      api_status: "ok",
-      note: "Frontend files not found in container. Use your separate frontend URL." 
-    });
+    res.json({ message: "Backend is running!", api_status: "ok" });
   }
 });
 
@@ -101,14 +96,14 @@ async function initDB() {
     FOREIGN KEY (user_id) REFERENCES users(id)
   )`);
   await db.execute(`CREATE TABLE IF NOT EXISTS checkin_history (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  score INT DEFAULT 0,
-  answers JSON,
-  l_answers JSON,
-  date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-)`);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    score INT DEFAULT 0,
+    answers JSON,
+    l_answers JSON,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`);
   console.log('Database tables ready!');
 }
 
@@ -121,21 +116,6 @@ app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/checkins',  require('./routes/checkins'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
-app.get('/debug', async (req, res) => {
-  const db = require('./db');
-  const [users]       = await db.execute('SELECT * FROM users');
-  const [habits]      = await db.execute('SELECT * FROM habits');
-  const [habit_logs]  = await db.execute('SELECT * FROM habit_logs');
-  const [habit_trends]= await db.execute('SELECT * FROM habit_trends');
-  const [profiles]    = await db.execute('SELECT * FROM profiles');
-  res.json({ users, habits, habit_logs, habit_trends, profiles });
-});
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-// Database check
 app.get('/admin', async (req, res) => {
   if (req.query.key !== 'spt2026') {
     return res.status(401).send('Unauthorized');
@@ -144,7 +124,7 @@ app.get('/admin', async (req, res) => {
   const selectedUser = req.query.user_id ? parseInt(req.query.user_id) : null;
 
   const [users]     = await db.execute('SELECT id, username, full_name, created_at FROM users');
-  const [logs]      = selectedUser 
+  const [logs]      = selectedUser
     ? await db.execute('SELECT * FROM logs WHERE user_id=? ORDER BY created_at DESC', [selectedUser])
     : await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
   const [checkins]  = selectedUser
@@ -179,13 +159,11 @@ app.get('/admin', async (req, res) => {
     </table>`;
   }
 
-  const userButtons = users.map(u => `
-    <a href="/admin?key=spt2026&user_id=${u.id}" 
-       style="display:inline-block;margin:4px;padding:8px 16px;border-radius:20px;text-decoration:none;
-              background:${selectedUser===u.id?'#1D9E75':'#333'};color:white;font-size:13px">
+  const userOptions = users.map(u =>
+    `<option value="${u.id}" ${selectedUser===u.id?'selected':''}>
       ${u.username} (ID: ${u.id})
-    </a>
-  `).join('');
+    </option>`
+  ).join('');
 
   res.send(`
     <html>
@@ -199,22 +177,19 @@ app.get('/admin', async (req, res) => {
         td { padding: 8px 12px; border-bottom: 1px solid #222; vertical-align: top; }
         tr:hover td { background: #1a1a1a; }
         pre { background: #1a1a1a; padding: 4px; border-radius: 4px; max-width: 300px; overflow: auto; }
+        select { background: #222; color: #eee; padding: 10px 16px; border-radius: 8px;
+                 border: 1px solid #1D9E75; font-size: 14px; cursor: pointer; margin-bottom: 20px; }
       </style>
     </head>
     <body>
       <h1>🛠 Admin Panel <small style="font-size:14px;color:#888">Bhutan Time (UTC+6)</small></h1>
-      
-      <h2>👤 Users (${users.length})</h2>
-      <div style="margin-bottom:20px">
-        <a href="/admin?key=spt2026" 
-           style="display:inline-block;margin:4px;padding:8px 16px;border-radius:20px;text-decoration:none;
-                  background:${!selectedUser?'#1D9E75':'#333'};color:white;font-size:13px">
-          All Users
-        </a>
-        ${userButtons}
-      </div>
-      ${makeTable(users)}
 
+      <select onchange="location.href='/admin?key=spt2026'+(this.value?'&user_id='+this.value:'')">
+        <option value="">👥 All Users</option>
+        ${userOptions}
+      </select>
+
+      <h2>👤 Users (${users.length})</h2>${makeTable(users)}
       <h2>📋 Logs (${logs.length})</h2>${makeTable(logs)}
       <h2>✅ Check-ins (${checkins.length})</h2>${makeTable(checkins)}
       <h2>🗓 Schedules (${schedules.length})</h2>${makeTable(schedules)}
@@ -222,3 +197,15 @@ app.get('/admin', async (req, res) => {
     </html>
   `);
 });
+
+app.get('/debug', async (req, res) => {
+  const [users]        = await db.execute('SELECT * FROM users');
+  const [habits]       = await db.execute('SELECT * FROM habits');
+  const [habit_logs]   = await db.execute('SELECT * FROM habit_logs');
+  const [habit_trends] = await db.execute('SELECT * FROM habit_trends');
+  const [profiles]     = await db.execute('SELECT * FROM profiles');
+  res.json({ users, habits, habit_logs, habit_trends, profiles });
+});
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
