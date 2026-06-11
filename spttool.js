@@ -505,6 +505,77 @@ async function doLogin() {
   }
 }
 
+/* ── Cross-device sync: pull all logs & schedules from backend on login ── */
+async function syncLogsFromBackend() {
+  const token = localStorage.getItem('qt_token');
+  if (!token) return;
+  const ud = getUserData();
+  if (!ud) return;
+
+  // 1. Sync logs
+  try {
+    const res = await fetch(`${API_BASE}/logs`, {
+      headers: { 'Authorization': 'Bearer ' + token, 'ngrok-skip-browser-warning': 'true' }
+    });
+    if (res.ok) {
+      const dbLogs = await res.json();
+      if (Array.isArray(dbLogs)) {
+        let changed = false;
+        dbLogs.forEach(l => {
+          const exists = ud.logs.find(local => local.id === l.id);
+          if (!exists) {
+            ud.logs.push({
+              id:        l.id,
+              habitId:   l.habit_id,
+              habitName: l.habit_name,
+              habitIcon: l.habit_icon || '📋',
+              date:      normalizeDateValue(l.date),
+              duration:  l.duration,
+              unit:      l.unit || 'hrs',
+              startTime: l.start_time || '',
+              endTime:   l.end_time   || '',
+              note:      l.note       || ''
+            });
+            changed = true;
+          }
+        });
+        if (changed) { normalizeLogDates(ud); saveUserData(); }
+      }
+    }
+  } catch(e) { console.warn('Log sync failed:', e); }
+
+  // 2. Sync schedules
+  try {
+    const res2 = await fetch(`${API_BASE}/schedules`, {
+      headers: { 'Authorization': 'Bearer ' + token, 'ngrok-skip-browser-warning': 'true' }
+    });
+    if (res2.ok) {
+      const dbSched = await res2.json();
+      if (Array.isArray(dbSched) && dbSched.length) {
+        if (!ud.schedules) ud.schedules = [];
+        let changed2 = false;
+        dbSched.forEach(s => {
+          const exists = ud.schedules.find(local => local.id === s.id);
+          if (!exists) {
+            ud.schedules.push({
+              id:           s.id,
+              category:     s.category,
+              date:         normalizeDateValue(s.date),
+              fromTime:     s.from_time  || '08:00',
+              toTime:       s.to_time    || '09:00',
+              durationMins: s.duration_mins || 0,
+              tasks:        s.tasks || [],
+              createdAt:    s.created_at || new Date().toISOString()
+            });
+            changed2 = true;
+          }
+        });
+        if (changed2) saveUserData();
+      }
+    }
+  } catch(e) { console.warn('Schedule sync failed:', e); }
+}
+
 function launchApp(user) {
   currentUser = user;
   _currentData = null; // clear cache so getUserData() re-loads from storage fresh
@@ -515,11 +586,17 @@ function launchApp(user) {
   document.getElementById('hdr-name').textContent = '';
   document.getElementById('auth-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
-  buildHabitCards();
-  renderCalendar();
-  renderTrends();
-  renderHistory();
-  renderTrackerSchedules();
+
+  // Pull backend data first, then render everything
+  syncLogsFromBackend().then(() => {
+    buildHabitCards();
+    renderCalendar();
+    renderTrends();
+    renderHistory();
+    renderTrackerSchedules();
+    renderTrackerTodayLogs();
+  });
+
   startAlarmWatcher();
   setTimeout(_rearmQuickAlarms, 500);
   window.scrollTo(0, 0);
@@ -1711,6 +1788,7 @@ async function logHabit(id) {
   renderCalendar();
   renderTrends();
   renderHistory();
+  renderTrackerTodayLogs();
 }
 /* ═══════════════════════════════════════
    ALARM WATCHER
@@ -3926,6 +4004,24 @@ async function saveSchedule() {
     });
 
     msgEl.textContent = '✅ Schedule saved!';
+
+    // Sync new schedule to backend for cross-device access
+    const token = localStorage.getItem('qt_token');
+    if (token) {
+      fetch(`${API_BASE}/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({
+          id:            schedId,
+          category,
+          date,
+          from_time:     from,
+          to_time:       to,
+          duration_mins: durationMins,
+          tasks:         JSON.stringify(tasks)
+        })
+      }).catch(e => console.warn('Schedule sync failed:', e));
+    }
   }
 
   msgEl.className = 'auth-msg ok';
@@ -3949,6 +4045,7 @@ async function saveSchedule() {
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
+  renderTrackerTodayLogs();
   setTimeout(() => closeScheduleModal(), 900);
 }
 
@@ -3964,6 +4061,7 @@ function deleteSchedule(id) {
   renderTrackerSchedules();
   renderHistory();
   renderTrends();
+  renderTrackerTodayLogs();
 }
 
 /* ── Render ── */
@@ -4148,11 +4246,78 @@ function _formatDateLabel(d) {
   return d.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
 }
 
-/* Patch showTab to render schedules when tracker is opened */
+/* ── TODAY'S LOGGED TIME (shown at bottom of Tracker tab) ── */
+function renderTrackerTodayLogs() {
+  const wrap = document.getElementById('tracker-today-logs');
+  if (!wrap) return;
+
+  const ud = getUserData();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayLogs = ud ? ud.logs.filter(l => !l.isQuickAlarm && normalizeDateValue(l.date) === todayStr) : [];
+
+  if (!todayLogs.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px;border-top:.5px solid var(--border);margin-top:4px">
+      <div style="font-size:11px;font-weight:600;color:var(--hint);letter-spacing:.07em;text-transform:uppercase">Today</div>
+      <button type="button" onclick="clearTodayTrackerLogs()"
+        style="font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);cursor:pointer;font-family:'Sora',sans-serif;transition:background .15s,color .15s"
+        onmouseover="this.style.background='var(--red-lt)';this.style.color='var(--red)'"
+        onmouseout="this.style.background='transparent';this.style.color='var(--text)'">🗑 Clear today</button>
+    </div>`;
+
+  todayLogs.slice().sort((a, b) => b.id - a.id).forEach(l => {
+    const durLabel = _fmtLogDuration(l);
+    const timeLabel = l.startTime ? `<span style="color:var(--hint)"> · ${l.startTime}${l.endTime ? '–' + l.endTime : ''}</span>` : '';
+    html += `
+      <div style="background:var(--surf);border:.5px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+        <div style="width:34px;height:34px;border-radius:10px;background:var(--surf2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${l.habitIcon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--text)">${l.habitName}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><strong>${durLabel}</strong>${timeLabel}</div>
+        </div>
+        <button onclick="deleteTodayLog(${l.id})" title="Delete"
+          style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:16px;padding:2px 4px;flex-shrink:0;line-height:1"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--hint)'">🗑</button>
+      </div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+function deleteTodayLog(logId) {
+  const ud = getUserData();
+  if (!ud) return;
+  const idx = ud.logs.findIndex(l => l.id === logId);
+  if (idx === -1) return;
+  ud.logs.splice(idx, 1);
+  saveUserData();
+  renderTrackerTodayLogs();
+  renderHistory();
+  renderCalendar();
+  renderTrends();
+}
+
+function clearTodayTrackerLogs() {
+  const ud = getUserData();
+  if (!ud) return;
+  const todayStr = new Date().toISOString().split('T')[0];
+  ud.logs = ud.logs.filter(l => normalizeDateValue(l.date) !== todayStr);
+  saveUserData();
+  renderTrackerTodayLogs();
+  renderHistory();
+  renderCalendar();
+  renderTrends();
+}
+
+/* Patch showTab to render schedules + today logs when tracker is opened */
 const _origShowTab = showTab;
 showTab = function(t) {
   _origShowTab(t);
-  if (t === 'tracker') renderTrackerSchedules();
+  if (t === 'tracker') { renderTrackerSchedules(); renderTrackerTodayLogs(); }
 };
 
 /* Also hide/show FAB based on active tab */
@@ -4562,8 +4727,8 @@ async function swLogTime() {
   if (typeof renderCalendar         === 'function') renderCalendar();
   if (typeof renderCalendar2        === 'function') renderCalendar2();
   if (typeof renderTrends           === 'function') renderTrends();
-  if (typeof renderTodayTracker     === 'function') renderTodayTracker();
   if (typeof renderTrackerSchedules === 'function') renderTrackerSchedules();
+  if (typeof renderTrackerTodayLogs === 'function') renderTrackerTodayLogs();
 
   const msg = document.getElementById('sw-log-msg');
   msg.textContent = `✅ Saved ${_swFmt(ms)} of ${cat} to History!`;

@@ -192,6 +192,7 @@
 
   <!-- ── TRACKER TAB ── -->
   <div id="tab-tracker" class="tab-pane">
+
     <!-- Schedule list (shown when schedules exist) -->
     <div id="tracker-schedules-wrap" style="display:none">
       <div class="tracker-list-header">
@@ -201,8 +202,21 @@
         </div>
         <button class="tracker-add-btn" onclick="openScheduleModal()" title="Add new schedule">＋</button>
       </div>
+      <!-- <div id="tracker-schedule-list"></div> -->
+    </div>
 
-       <!-- ── STOPWATCH ── -->
+    <!-- Empty state with centered + button — shown when no schedules -->
+    <div class="tracker-empty-state" id="tracker-empty-state">
+      <div class="tracker-empty-icon">📋</div>
+      <h3 class="tracker-empty-title">No schedules yet</h3>
+      <p class="tracker-empty-sub">Tap the button below to add your first scheduled activity</p>
+      <button class="tracker-fab-center" onclick="openScheduleModal()" title="Add Schedule">
+        <span class="tracker-fab-plus">＋</span>
+        <span class="tracker-fab-label">Add Schedule</span>
+      </button>
+    </div>
+
+    <!-- ── STOPWATCH — always visible, below schedule/empty section ── -->
     <div class="tool-card" style="margin-top:16px">
       <div class="tool-card-title">⏱ Stopwatch</div>
       <p class="tool-card-sub">Track how long an activity takes.</p>
@@ -214,44 +228,30 @@
         <button class="sw-btn stop" id="sw-stop-btn" onclick="swStop()" disabled>⏹ Stop</button>
         <button class="sw-btn reset" id="sw-reset-btn" onclick="swReset()" disabled>↺ Reset</button>
       </div>
-     <div id="sw-stop" style="margin-top:10px"></div>
+      <div id="sw-stop" style="margin-top:10px"></div>
     </div>
 
-      <!-- Log to habit after stopping -->
-      <div id="sw-log-section" style="display:none;margin-top:14px">
-        <div class="add-alarm-section-lbl" style="margin-bottom:8px">📝 Log this time to a habit?</div>
-        <div class="aa-categories" id="sw-categories">
-          <button type="button" class="aa-cat-btn" data-cat="Work" onclick="swSelectCat(this)">💻 Work</button>
-          <button type="button" class="aa-cat-btn" data-cat="Studies" onclick="swSelectCat(this)">📚 Studies</button>
-          <button type="button" class="aa-cat-btn" data-cat="Exercise" onclick="swSelectCat(this)">🏃 Exercise</button>
-          <button type="button" class="aa-cat-btn" data-cat="Meditation" onclick="swSelectCat(this)">🧘 Meditation</button>
-          <button type="button" class="aa-cat-btn" data-cat="Reading" onclick="swSelectCat(this)">📖 Reading</button>
-          <input 
-            type="text" 
-            class="aa-custom-input" 
-            id="sw-custom-activity" 
-            placeholder="Type activity name" 
-            oninput="swClearCatIfTyping()"
-          >
-          <!-- <button type="button" class="aa-cat-btn" data-cat="Other" onclick="swSelectCat(this)">✍ Other</button> -->
-        </div>
-        <button class="log-btn" style="margin-top:10px;width:100%" onclick="swLogTime()">💾 Save to History</button>
-        <div id="sw-log-msg" class="auth-msg" style="margin-top:6px"></div>
+    <!-- Log to habit after stopping -->
+    <div id="sw-log-section" style="display:none;margin-top:14px">
+      <div class="add-alarm-section-lbl" style="margin-bottom:8px">📝 Log this time to a habit?</div>
+      <div class="aa-categories" id="sw-categories">
+        <button type="button" class="aa-cat-btn" data-cat="Work" onclick="swSelectCat(this)">💻 Work</button>
+        <button type="button" class="aa-cat-btn" data-cat="Studies" onclick="swSelectCat(this)">📚 Studies</button>
+        <button type="button" class="aa-cat-btn" data-cat="Exercise" onclick="swSelectCat(this)">🏃 Exercise</button>
+        <button type="button" class="aa-cat-btn" data-cat="Meditation" onclick="swSelectCat(this)">🧘 Meditation</button>
+        <button type="button" class="aa-cat-btn" data-cat="Reading" onclick="swSelectCat(this)">📖 Reading</button>
+        <input
+          type="text"
+          class="aa-custom-input"
+          id="sw-custom-activity"
+          placeholder="Type activity name"
+          oninput="swClearCatIfTyping()"
+        >
       </div>
-    </div>  
-
-      <div id="tracker-schedule-list"></div>
-    
-    <!-- Empty state with centered + button -->
-    <div class="tracker-empty-state" id="tracker-empty-state">
-      <div class="tracker-empty-icon">📋</div>
-      <h3 class="tracker-empty-title">No schedules yet</h3>
-      <p class="tracker-empty-sub">Tap the button below to add your first scheduled activity</p>
-      <button class="tracker-fab-center" onclick="openScheduleModal()" title="Add Schedule">
-        <span class="tracker-fab-plus">＋</span>
-        <span class="tracker-fab-label">Add Schedule</span>
-      </button>
-    </div>  
+      <button class="log-btn" style="margin-top:10px;width:100%" onclick="swLogTime()">💾 Save to History</button>
+      <div id="sw-log-msg" class="auth-msg" style="margin-top:6px"></div>
+    </div>
+    <div id="tracker-schedule-list"></div>
   </div>
 
   <!-- ── HISTORY TAB ── -->

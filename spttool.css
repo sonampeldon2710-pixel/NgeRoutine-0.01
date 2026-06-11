@@ -1437,7 +1437,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .lf-reminder-lbl{font-size:13px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:500}
 .lf-reminder-lbl input{accent-color:var(--green);width:15px;height:15px}
 /* ── TRACKER EMPTY STATE ── */
-.tracker-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:60vh;padding:32px 20px;animation:fadeIn .4s ease}
+.tracker-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px 20px;animation:fadeIn .4s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .tracker-empty-icon{font-size:48px;margin-bottom:16px;opacity:.4}
 .tracker-empty-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--text);margin-bottom:8px}
