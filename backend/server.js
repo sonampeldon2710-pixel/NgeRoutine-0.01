@@ -134,12 +134,42 @@ app.get('/debug', async (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
+
+// Database check
 app.get('/admin', async (req, res) => {
+  if (req.query.key !== 'spt2026') {
+    return res.status(401).send('Unauthorized');
+  }
   const [users]     = await db.execute('SELECT id, username, full_name, created_at FROM users');
   const [logs]      = await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
   const [checkins]  = await db.execute('SELECT * FROM checkin_history ORDER BY date DESC');
   const [schedules] = await db.execute('SELECT * FROM schedules ORDER BY created_at DESC');
-  
+
+  function toBT(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d)) return val;
+    return d.toLocaleString('en-BT', { timeZone: 'Asia/Thimphu', 
+      year:'numeric', month:'short', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hour12: true });
+  }
+
+  function formatVal(key, val) {
+    if (val === null || val === undefined) return '';
+    if (key.includes('at') || key === 'date') return toBT(val);
+    if (typeof val === 'object') return `<pre style="margin:0;font-size:11px">${JSON.stringify(val, null, 2)}</pre>`;
+    return val;
+  }
+
+  function makeTable(rows) {
+    if (!rows.length) return '<p style="color:#888">No data</p>';
+    const keys = Object.keys(rows[0]);
+    return `<table>
+      <tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr>
+      ${rows.map(r => `<tr>${keys.map(k => `<td>${formatVal(k, r[k])}</td>`).join('')}</tr>`).join('')}
+    </table>`;
+  }
+
   res.send(`
     <html>
     <head>
@@ -149,36 +179,17 @@ app.get('/admin', async (req, res) => {
         h2 { color: #1D9E75; border-bottom: 1px solid #333; padding-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px; }
         th { background: #1D9E75; color: white; padding: 8px 12px; text-align: left; }
-        td { padding: 8px 12px; border-bottom: 1px solid #222; }
+        td { padding: 8px 12px; border-bottom: 1px solid #222; vertical-align: top; }
         tr:hover td { background: #1a1a1a; }
+        pre { background: #1a1a1a; padding: 4px; border-radius: 4px; max-width: 300px; overflow: auto; }
       </style>
     </head>
     <body>
-      <h1>🛠 Admin Panel</h1>
-      
-      <h2>👤 Users (${users.length})</h2>
-      <table>
-        <tr>${Object.keys(users[0]||{}).map(k=>`<th>${k}</th>`).join('')}</tr>
-        ${users.map(u=>`<tr>${Object.values(u).map(v=>`<td>${v??''}</td>`).join('')}</tr>`).join('')}
-      </table>
-
-      <h2>📋 Logs (${logs.length})</h2>
-      <table>
-        <tr>${Object.keys(logs[0]||{}).map(k=>`<th>${k}</th>`).join('')}</tr>
-        ${logs.map(u=>`<tr>${Object.values(u).map(v=>`<td>${v??''}</td>`).join('')}</tr>`).join('')}
-      </table>
-
-      <h2>✅ Check-ins (${checkins.length})</h2>
-      <table>
-        <tr>${Object.keys(checkins[0]||{}).map(k=>`<th>${k}</th>`).join('')}</tr>
-        ${checkins.map(u=>`<tr>${Object.values(u).map(v=>`<td>${v??''}</td>`).join('')}</tr>`).join('')}
-      </table>
-
-      <h2>🗓 Schedules (${schedules.length})</h2>
-      <table>
-        <tr>${Object.keys(schedules[0]||{}).map(k=>`<th>${k}</th>`).join('')}</tr>
-        ${schedules.map(u=>`<tr>${Object.values(u).map(v=>`<td>${v??''}</td>`).join('')}</tr>`).join('')}
-      </table>
+      <h1>🛠 Admin Panel <small style="font-size:14px;color:#888">Bhutan Time (UTC+6)</small></h1>
+      <h2>👤 Users (${users.length})</h2>${makeTable(users)}
+      <h2>📋 Logs (${logs.length})</h2>${makeTable(logs)}
+      <h2>✅ Check-ins (${checkins.length})</h2>${makeTable(checkins)}
+      <h2>🗓 Schedules (${schedules.length})</h2>${makeTable(schedules)}
     </body>
     </html>
   `);
