@@ -184,12 +184,13 @@ app.get('/admin', async (req, res) => {
     <body>
       <h1>🛠 Admin Panel <small style="font-size:14px;color:#888">Bhutan Time (UTC+6)</small></h1>
 
+      <h2>👤 Users (${users.length})</h2>${makeTable(users)}
+
       <select onchange="location.href='/admin?key=spt2026'+(this.value?'&user_id='+this.value:'')">
         <option value="">👥 All Users</option>
         ${userOptions}
       </select>
-
-      <h2>👤 Users (${users.length})</h2>${makeTable(users)}
+      
       <h2>📋 Logs (${logs.length})</h2>${makeTable(logs)}
       <h2>✅ Check-ins (${checkins.length})</h2>${makeTable(checkins)}
       <h2>🗓 Schedules (${schedules.length})</h2>${makeTable(schedules)}
