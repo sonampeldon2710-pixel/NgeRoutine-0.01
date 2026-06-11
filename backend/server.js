@@ -156,7 +156,8 @@ app.get('/admin', async (req, res) => {
 
   function formatVal(key, val) {
     if (val === null || val === undefined) return '';
-    if (key.includes('at') || key === 'date') return toBT(val);
+    // only convert actual date columns
+    if (['created_at', 'updated_at', 'date', 'logged_at'].includes(key)) return toBT(val);
     if (typeof val === 'object') return `<pre style="margin:0;font-size:11px">${JSON.stringify(val, null, 2)}</pre>`;
     return val;
   }
