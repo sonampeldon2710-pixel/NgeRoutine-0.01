@@ -140,23 +140,31 @@ app.get('/admin', async (req, res) => {
   if (req.query.key !== 'spt2026') {
     return res.status(401).send('Unauthorized');
   }
+
+  const selectedUser = req.query.user_id ? parseInt(req.query.user_id) : null;
+
   const [users]     = await db.execute('SELECT id, username, full_name, created_at FROM users');
-  const [logs]      = await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
-  const [checkins]  = await db.execute('SELECT * FROM checkin_history ORDER BY date DESC');
-  const [schedules] = await db.execute('SELECT * FROM schedules ORDER BY created_at DESC');
+  const [logs]      = selectedUser 
+    ? await db.execute('SELECT * FROM logs WHERE user_id=? ORDER BY created_at DESC', [selectedUser])
+    : await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
+  const [checkins]  = selectedUser
+    ? await db.execute('SELECT * FROM checkin_history WHERE user_id=? ORDER BY date DESC', [selectedUser])
+    : await db.execute('SELECT * FROM checkin_history ORDER BY date DESC');
+  const [schedules] = selectedUser
+    ? await db.execute('SELECT * FROM schedules WHERE user_id=? ORDER BY created_at DESC', [selectedUser])
+    : await db.execute('SELECT * FROM schedules ORDER BY created_at DESC');
 
   function toBT(val) {
     if (!val) return '';
     const d = new Date(val);
     if (isNaN(d)) return val;
-    return d.toLocaleString('en-BT', { timeZone: 'Asia/Thimphu', 
+    return d.toLocaleString('en-BT', { timeZone: 'Asia/Thimphu',
       year:'numeric', month:'short', day:'2-digit',
       hour:'2-digit', minute:'2-digit', hour12: true });
   }
 
   function formatVal(key, val) {
     if (val === null || val === undefined) return '';
-    // only convert actual date columns
     if (['created_at', 'updated_at', 'date', 'logged_at'].includes(key)) return toBT(val);
     if (typeof val === 'object') return `<pre style="margin:0;font-size:11px">${JSON.stringify(val, null, 2)}</pre>`;
     return val;
@@ -170,6 +178,14 @@ app.get('/admin', async (req, res) => {
       ${rows.map(r => `<tr>${keys.map(k => `<td>${formatVal(k, r[k])}</td>`).join('')}</tr>`).join('')}
     </table>`;
   }
+
+  const userButtons = users.map(u => `
+    <a href="/admin?key=spt2026&user_id=${u.id}" 
+       style="display:inline-block;margin:4px;padding:8px 16px;border-radius:20px;text-decoration:none;
+              background:${selectedUser===u.id?'#1D9E75':'#333'};color:white;font-size:13px">
+      ${u.username} (ID: ${u.id})
+    </a>
+  `).join('');
 
   res.send(`
     <html>
@@ -187,7 +203,18 @@ app.get('/admin', async (req, res) => {
     </head>
     <body>
       <h1>🛠 Admin Panel <small style="font-size:14px;color:#888">Bhutan Time (UTC+6)</small></h1>
-      <h2>👤 Users (${users.length})</h2>${makeTable(users)}
+      
+      <h2>👤 Users (${users.length})</h2>
+      <div style="margin-bottom:20px">
+        <a href="/admin?key=spt2026" 
+           style="display:inline-block;margin:4px;padding:8px 16px;border-radius:20px;text-decoration:none;
+                  background:${!selectedUser?'#1D9E75':'#333'};color:white;font-size:13px">
+          All Users
+        </a>
+        ${userButtons}
+      </div>
+      ${makeTable(users)}
+
       <h2>📋 Logs (${logs.length})</h2>${makeTable(logs)}
       <h2>✅ Check-ins (${checkins.length})</h2>${makeTable(checkins)}
       <h2>🗓 Schedules (${schedules.length})</h2>${makeTable(schedules)}
