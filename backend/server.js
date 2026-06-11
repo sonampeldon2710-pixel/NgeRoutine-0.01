@@ -1,3 +1,7 @@
+// Paste this in browser console to test
+fetch('https://ngeroutinetool-production.up.railway.app/health')
+  .then(r => console.log('Status:', r.status))
+  
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
