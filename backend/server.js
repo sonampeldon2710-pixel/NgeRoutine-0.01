@@ -1,7 +1,3 @@
-// Paste this in browser console to test
-fetch('https://ngeroutinetool-production.up.railway.app/health')
-  .then(r => console.log('Status:', r.status))
-
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
@@ -18,14 +14,11 @@ app.use(express.json());
 
 const path = require('path');
 
-// Serve frontend files - ONLY if they exist in the same folder
-// This prevents the server from crashing if index.html isn't bundled
 const frontendPath = path.join(__dirname, '..'); 
 app.use(express.static(frontendPath));
 
 app.get('/', (req, res) => {
   const indexPath = path.join(frontendPath, 'index.html');
-  // Check if file exists before trying to send it
   if (require('fs').existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
@@ -121,21 +114,12 @@ async function initDB() {
 
 initDB().catch(console.error);
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-}));
-app.options('*', cors());
-app.use(express.json());
-
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/habits',    require('./routes/habits'));
 app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
-app.use('/api/alarms',    require('./routes/alarms'));
+app.use('/api/checkins',  require('./routes/checkins'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
-app.use('/api/checkins',  require('./routes/checkins')); 
 
 app.get('/debug', async (req, res) => {
   const db = require('./db');
@@ -147,7 +131,5 @@ app.get('/debug', async (req, res) => {
   res.json({ users, habits, habit_logs, habit_trends, profiles });
 });
 
-app.use('/api/checkins', require('./routes/checkins'));
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
