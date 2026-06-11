@@ -329,22 +329,6 @@
    STATE  –  persisted via localStorage
 ═══════════════════════════════════════ */
 
-// const API = 'https://abc123.ngrok-free.app/api';
-// const API = 'https://contort-schematic-cameo.ngrok-free.dev/api';
-// const API = 'https://ngeroutinetool-pcmphk0l.b4a.run/api';
-
-// const API = 'https://ngeroutinetool-wvl7srve.b4a.run/api';
-
-// const API = 'https://ngeroutinetool.onrender.com/api';
-
-// const response = await fetch(`${API}/your-endpoint`, {
-//   method: 'POST',
-//   headers: {
-//     'Content-Type': 'application/json',
-//     'ngrok-skip-browser-warning': 'true'  // ← add this line
-//   },
-//   body: JSON.stringify(data)
-// });
 
 const API_BASE = 'https://ngeroutine-001-production.up.railway.app/api';
 
