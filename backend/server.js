@@ -133,3 +133,11 @@ app.get('/debug', async (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.get('/admin', async (req, res) => {
+  const [users]    = await db.execute('SELECT id, username, full_name, created_at FROM users');
+  const [logs]     = await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
+  const [checkins] = await db.execute('SELECT * FROM checkin_history ORDER BY date DESC');
+  const [schedules]= await db.execute('SELECT * FROM schedules ORDER BY created_at DESC');
+  res.json({ users, logs, checkins, schedules });
+});
