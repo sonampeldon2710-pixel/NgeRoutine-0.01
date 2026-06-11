@@ -121,19 +121,19 @@ async function initDB() {
 
 initDB().catch(console.error);
 
-// app.use(cors({
-//   origin: '*',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-// }));
-// app.options('*', cors());
-// app.use(express.json());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
+app.options('*', cors());
+app.use(express.json());
 
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/habits',    require('./routes/habits'));
 app.use('/api/logs',      require('./routes/logs'));
 app.use('/api/schedules', require('./routes/schedules'));
-// app.use('/api/alarms',    require('./routes/alarms'));
+app.use('/api/alarms',    require('./routes/alarms'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 app.use('/api/checkins',  require('./routes/checkins')); 
 
