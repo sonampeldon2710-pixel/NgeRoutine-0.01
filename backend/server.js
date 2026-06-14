@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const ExcelJS = require('exceljs');
 const app     = express();
 const db      = require('./db');
 
@@ -116,6 +117,108 @@ app.use('/api/schedules', require('./routes/schedules'));
 app.use('/api/checkins',  require('./routes/checkins'));
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
+// ── Admin: export all data as Excel ───────────────────────────────────
+app.get('/admin/export', async (req, res) => {
+  if (req.query.key !== 'spt2026') {
+    return res.status(401).send('Unauthorized');
+  }
+
+  try {
+    const [users]     = await db.execute('SELECT id, username, full_name, created_at FROM users');
+    const [logs]      = await db.execute('SELECT * FROM logs ORDER BY created_at DESC');
+    const [checkins]  = await db.execute('SELECT * FROM checkin_history ORDER BY date DESC');
+    const [schedules] = await db.execute('SELECT * FROM schedules ORDER BY created_at DESC');
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'SPT Admin';
+    wb.created = new Date();
+
+    function addSheet(name, rows) {
+      const ws = wb.addWorksheet(name);
+      if (!rows.length) {
+        ws.addRow(['No data']);
+        return;
+      }
+      const keys = Object.keys(rows[0]);
+      ws.addRow(keys);
+      ws.getRow(1).font = { bold: true };
+      ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D9E75' } };
+      ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+      rows.forEach(r => {
+        const row = keys.map(k => {
+          const val = r[k];
+          if (val === null || val === undefined) return '';
+          if (val instanceof Date) return val;
+          if (typeof val === 'object') return JSON.stringify(val);
+          return val;
+        });
+        ws.addRow(row);
+      });
+
+      ws.columns.forEach(col => {
+        let maxLen = 10;
+        col.eachCell({ includeEmpty: true }, cell => {
+          const len = cell.value ? String(cell.value).length : 0;
+          if (len > maxLen) maxLen = len;
+        });
+        col.width = Math.min(maxLen + 2, 60);
+      });
+    }
+
+    addSheet('Users', users);
+    addSheet('Logs', logs);
+    addSheet('Check-ins', checkins);
+    addSheet('Schedules', schedules);
+
+    const filename = `spt-data-export-${new Date().toISOString().slice(0,10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Export failed:', err);
+    res.status(500).send('Export failed: ' + err.message);
+  }
+});
+
+// ── Admin: wipe all data ──────────────────────────────────────────────
+app.post('/admin/wipe', async (req, res) => {
+  if (req.query.key !== 'spt2026') {
+    return res.status(401).send('Unauthorized');
+  }
+  if (req.body.confirm !== 'WIPE') {
+    return res.status(400).send('Confirmation mismatch. Nothing was deleted.');
+  }
+
+  try {
+    // Children first, to satisfy FK constraints
+    await db.execute('DELETE FROM habit_trends');
+    await db.execute('DELETE FROM habit_logs');
+    await db.execute('DELETE FROM habits');
+    await db.execute('DELETE FROM checkin_history');
+    await db.execute('DELETE FROM schedules');
+    await db.execute('DELETE FROM logs');
+    await db.execute('DELETE FROM profiles');
+    await db.execute('DELETE FROM users');
+
+    // Reset auto-increment counters
+    await db.execute('ALTER TABLE users AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE profiles AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE habits AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE habit_logs AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE habit_trends AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE logs AUTO_INCREMENT = 1');
+    await db.execute('ALTER TABLE checkin_history AUTO_INCREMENT = 1');
+
+    res.redirect(`/admin?key=${req.query.key}`);
+  } catch (err) {
+    console.error('Wipe failed:', err);
+    res.status(500).send('Wipe failed: ' + err.message);
+  }
+});
+
 app.get('/admin', async (req, res) => {
   if (req.query.key !== 'spt2026') {
     return res.status(401).send('Unauthorized');
@@ -179,10 +282,31 @@ app.get('/admin', async (req, res) => {
         pre { background: #1a1a1a; padding: 4px; border-radius: 4px; max-width: 300px; overflow: auto; }
         select { background: #222; color: #eee; padding: 10px 16px; border-radius: 8px;
                  border: 1px solid #1D9E75; font-size: 14px; cursor: pointer; margin-bottom: 20px; }
+        .wipe-btn { background: #c0392b; color: #fff; border: none; padding: 10px 18px;
+                    border-radius: 8px; cursor: pointer; font-size: 14px; margin: 0 0 20px 0; }
+        .wipe-btn:hover { background: #e74c3c; }
+        .export-btn { background: #1D9E75; color: #fff; border: none; padding: 10px 18px;
+                       border-radius: 8px; cursor: pointer; font-size: 14px; margin: 0 10px 20px 0;
+                       text-decoration: none; display: inline-block; }
+        .export-btn:hover { background: #25c191; }
       </style>
     </head>
     <body>
       <h1>🛠 Admin Panel <small style="font-size:14px;color:#888">Bhutan Time (UTC+6)</small></h1>
+
+      <a href="/admin/export?key=${req.query.key}" class="export-btn">📊 Export to Excel</a>
+
+      <form method="POST" action="/admin/wipe?key=${req.query.key}"
+            onsubmit="
+              if(!confirm('This will PERMANENTLY DELETE ALL DATA — every user, log, schedule, and check-in. This cannot be undone. Continue?')) return false;
+              const c = prompt('Type WIPE (all caps) to confirm:');
+              if (c !== 'WIPE') { alert('Cancelled — text did not match.'); return false; }
+              document.getElementById('wipeConfirm').value = c;
+              return true;
+            ">
+        <input type="hidden" name="confirm" id="wipeConfirm" value="">
+        <button type="submit" class="wipe-btn">🗑️ Wipe All Data</button>
+      </form>
 
       <h2>👤 Users (${users.length})</h2>${makeTable(users)}
 
